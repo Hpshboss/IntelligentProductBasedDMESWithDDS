@@ -1,0 +1,6 @@
+struct sample {
+    unsigned long index;
+    unsigned long size;
+    string note;
+    sequence<octet> buffer;
+};
