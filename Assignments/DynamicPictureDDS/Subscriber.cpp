@@ -42,7 +42,6 @@ PictureSubscriber::PictureSubscriber()
 }
 
 struct timespec begin, end;
-unsigned int countSample = 0;
 double elapsed;
 std::vector<unsigned char> buffer;
 
@@ -66,7 +65,8 @@ bool PictureSubscriber::init()
 
     // Add members to the struct.
     struct_type_builder->add_member(0, "index", DynamicTypeBuilderFactory::get_instance()->create_uint32_type());
-    struct_type_builder->add_member(1, "Picture", sequence_type);
+    struct_type_builder->add_member(1, "size", DynamicTypeBuilderFactory::get_instance()->create_uint32_type());
+    struct_type_builder->add_member(2, "Picture", sequence_type);
     struct_type_builder->set_name("Picture");
     
     DynamicType_ptr dynType = struct_type_builder->build();
@@ -144,27 +144,30 @@ void PictureSubscriber::SubListener::onNewDataMessage(
         if (m_info.sampleKind == ALIVE)
         {
             this->n_samples++;
-            countSample++;
             
             // Print your structure data here.
             uint32_t index;
             m_DynHello->get_uint32_value(index, 0);
-            std::cout << "index: " << index <<  std::endl;  
+            std::cout << "index: " << index <<  "; \t";
+
+            uint32_t size;
+            m_DynHello->get_uint32_value(size, 1);
+            std::cout << "size: " << size <<  std::endl; 
             
-            
+
             DynamicType_ptr octet_type_temp(DynamicTypeBuilderFactory::get_instance()->create_byte_type());
             DynamicTypeBuilder_ptr sequence_type_builder_temp(DynamicTypeBuilderFactory::get_instance()->create_sequence_builder(octet_type_temp, 3873715));
             DynamicType_ptr sequence_type_temp = sequence_type_builder_temp->build();
 
-            DynamicData* sequence_data_temp = m_DynHello->loan_value(1);
-            for (int i = 0; i < index; i++) {
+            DynamicData* sequence_data_temp = m_DynHello->loan_value(2);
+            for (int i = 0; i < size; i++) {
                 buffer.push_back(sequence_data_temp->get_byte_value(i));
             }
             m_DynHello->return_loaned_value(sequence_data_temp);
             
             cv::Mat imageDecoded = cv::imdecode(buffer, 1);
 
-            cv::imwrite(std::to_string(countSample) + "_droneNew.jpg", imageDecoded);
+            cv::imwrite(std::to_string(index) + "_droneNew.jpg", imageDecoded);
         }
     }
 }

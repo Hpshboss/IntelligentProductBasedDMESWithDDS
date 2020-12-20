@@ -24,7 +24,7 @@ using namespace rtps;
 
 int type = 1;
 int count = 10;
-long sleep = 30000;
+long sleep = 10000;
 
 
 void usage()

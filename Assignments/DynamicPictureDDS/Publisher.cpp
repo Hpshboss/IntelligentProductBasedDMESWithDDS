@@ -55,19 +55,21 @@ bool PicturePublisher::init()
     
     // Add members to the struct. By the way, id must be consecutive starting by zero.
     struct_type_builder->add_member(0, "index", DynamicTypeBuilderFactory::get_instance()->create_uint32_type());
-    struct_type_builder->add_member(1, "Picture", sequence_type);
+    struct_type_builder->add_member(1, "size", DynamicTypeBuilderFactory::get_instance()->create_uint32_type());
+    struct_type_builder->add_member(2, "Picture", sequence_type);
     struct_type_builder->set_name("Picture"); // Need to be same with topic data type
     
     DynamicType_ptr dynType = struct_type_builder->build();
     m_DynType.SetDynamicType(dynType);
     m_DynHello = DynamicDataFactory::get_instance()->create_data(dynType);
     
-    m_DynHello->set_uint32_value(buffer.size(), 0);
+    m_DynHello->set_uint32_value(0, 0);
+    m_DynHello->set_uint32_value(buffer.size(), 1);
     
     MemberId id;
-    std::cout << "init: " << id << std::endl;
+    // std::cout << "init: " << id << std::endl;
     
-    DynamicData* sequence_data = m_DynHello->loan_value(1);
+    DynamicData* sequence_data = m_DynHello->loan_value(2);
     for (int i = 0; i < buffer.size(); i++) {
         if (i == buffer.size() - 1) {
             std::cout << "Total Size: " << i + 1 << std::endl;
@@ -93,6 +95,7 @@ bool PicturePublisher::init()
     Wparam.topic.topicKind = NO_KEY;
     Wparam.topic.topicDataType = "Picture";
     Wparam.topic.topicName = "PictureTopic";
+
     mp_publisher = Domain::createPublisher(mp_participant, Wparam, (PublisherListener*)&m_listener);
     if (mp_publisher == nullptr)
     {
@@ -155,19 +158,22 @@ void PicturePublisher::runThread(
 
     while (!stop && (i < samples || samples == 0))
     {
-        // std::cout << "runThreading...; Samples: " << samples << std::endl;
         if (publish(samples != 0))
         {
             uint32_t index;
             m_DynHello->get_uint32_value(index, 0);
-            std::cout << "index: " << index << ";\t";
+            std::cout << "runThreading...; \tSample Index: " << index << "; \t";
+
+            uint32_t size;
+            m_DynHello->get_uint32_value(size, 1);
+            std::cout << "size: " << size << std::endl;
             
 
-            if (index == 10){
-                std::cout << "Structure message" << " with index: " << index << " SENT" << std::endl;
+            if (i == 9){
+                std::cout << "Structure message" << " with index: " << i + 1 << " SENT" << std::endl;
                 // Avoid unmatched condition impact subscriber receiving message
-                std::cout << "Wait within one second..." << std::endl;
-                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+                std::cout << "Wait within twenty second..." << std::endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(10000));
             }
             ++i;
         }
@@ -200,10 +206,12 @@ bool PicturePublisher::publish(
     // std::cout << "m_listener.n_matched: " << m_listener.n_matched << std::endl;
     if (m_listener.firstConnected || !waitForListener || m_listener.n_matched > 0)
     {
-        // uint32_t index;
-        // m_DynHello->get_uint32_value(index, 0);
-        // m_DynHello->set_uint32_value(index + 1, 0);
+        uint32_t index;
+        m_DynHello->get_uint32_value(index, 0);
+        m_DynHello->set_uint32_value(index + 1, 0);
+
         mp_publisher->write((void*)m_DynHello);
+        
         return true;
     }
     return false;
