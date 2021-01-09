@@ -23,8 +23,8 @@ using namespace fastrtps;
 using namespace rtps;
 
 int type = 1;
-int count = 10;
-long sleep = 1500;
+int count = 20;
+long sleep = 125;
 
 
 void usage()

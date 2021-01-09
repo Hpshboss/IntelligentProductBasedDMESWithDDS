@@ -23,6 +23,9 @@
 
 #include <opencv2/opencv.hpp>
 
+#include <fastrtps/transport/UDPv4TransportDescriptor.h>
+#include <fastrtps/transport/TCPv4TransportDescriptor.h>
+
 #include "picture.h"
 
 using namespace eprosima::fastrtps;
@@ -40,15 +43,20 @@ PicturePublisher::PicturePublisher()
 bool PicturePublisher::init()
 {
     std::cout << "Initializing..." << std::endl;
+    std::cout << "|                    |" << " 0%" << std::endl;
+    
     cv::Mat image = cv::imread("drone.jpg", 1);
     std::vector<unsigned char> buffer;
     cv::imencode(".jpg", image, buffer);
-    
+
+    std::cout << "|=====               |" << " 25%" << std::endl;
 
     m_picture.index(10);
     m_picture.note("No Comment");
     m_picture.buffer(buffer);
     m_picture.size(buffer.size());
+
+    std::cout << "|==========          |" << " 50%" << std::endl;
 
     ParticipantAttributes PParam;
     // PParam.rtps.builtin.discovery_config.discoveryProtocol = DiscoveryProtocol_t::SIMPLE;
@@ -56,6 +64,14 @@ bool PicturePublisher::init()
     // PParam.rtps.builtin.discovery_config.m_simpleEDP.use_PublicationReaderANDSubscriptionWriter = true;
     // PParam.rtps.builtin.discovery_config.m_simpleEDP.use_PublicationWriterANDSubscriptionReader = true;
     // PParam.rtps.builtin.discovery_config.leaseDuration = c_TimeInfinite;
+    
+    PParam.rtps.useBuiltinTransports = false;
+
+    std::shared_ptr<TCPv4TransportDescriptor> descriptor = std::make_shared<TCPv4TransportDescriptor>();
+    descriptor->sendBufferSize = 6000000; // 6Mb
+    descriptor->receiveBufferSize = 6000000; // 6Mb
+    descriptor->add_listener_port(5100);
+    PParam.rtps.userTransports.push_back(descriptor);
     PParam.rtps.setName("Participant_pub");
     mp_participant = Domain::createParticipant(PParam, (ParticipantListener*)&m_part_list);
 
@@ -63,6 +79,8 @@ bool PicturePublisher::init()
     {
         return false;
     }
+
+    std::cout << "|===============     |" << " 75%" << std::endl;
 
     //REGISTER THE TYPE
     Domain::registerType(mp_participant, &m_type);
@@ -72,19 +90,23 @@ bool PicturePublisher::init()
     Wparam.topic.topicKind = NO_KEY;
     Wparam.topic.topicDataType = "picture";
     Wparam.topic.topicName = "pictureTopic";
+    // std::cout << "throughputController.bytesPerPeriod: " << Wparam.throughputController.bytesPerPeriod << std::endl;
     // Wparam.topic.historyQos.kind = KEEP_LAST_HISTORY_QOS;
     // Wparam.topic.historyQos.depth = 30;
     // Wparam.topic.resourceLimitsQos.max_samples = 5000;
     // Wparam.topic.resourceLimitsQos.allocated_samples = 100;
     // Wparam.times.heartbeatPeriod.seconds = 2;
     // Wparam.times.heartbeatPeriod.nanosec = 200 * 1000 * 1000;
-    // Wparam.qos.m_reliability.kind = BEST_EFFORT_RELIABILITY_QOS;
+    Wparam.qos.m_reliability.kind = RELIABLE_RELIABILITY_QOS;
     mp_publisher = Domain::createPublisher(mp_participant, Wparam, (PublisherListener*)&m_listener);
     if (mp_publisher == nullptr)
     {
         return false;
     }
+
+    std::cout << "|====================|" << " 100%" << std::endl;
     std::cout << "Initialization Complete" << std::endl;
+
     return true;
 
 }
@@ -151,7 +173,7 @@ void PicturePublisher::runThread(
             
             std::cout << "Note: " << m_picture.note() << std::endl;
 
-            if (i == 9){
+            if (i == 19){
                 std::cout << "Structure message" << " with index: " << i + 1 << " SENT" << std::endl;
                 // Avoid unmatched condition impact subscriber receiving message
                 std::cout << "Wait within twenty second..." << std::endl;

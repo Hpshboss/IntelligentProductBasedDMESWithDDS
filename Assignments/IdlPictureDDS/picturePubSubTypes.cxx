@@ -48,6 +48,7 @@ bool picturePubSubType::serialize(void *data, SerializedPayload_t *payload)
 {
     picture *p_type = static_cast<picture*>(data);
     eprosima::fastcdr::FastBuffer fastbuffer(reinterpret_cast<char*>(payload->data), payload->max_size); // Object that manages the raw buffer.
+    // eprosima::fastcdr::FastBuffer fastbuffer(reinterpret_cast<char*>(payload->data), 640000);
     eprosima::fastcdr::Cdr ser(fastbuffer, eprosima::fastcdr::Cdr::DEFAULT_ENDIAN,
             eprosima::fastcdr::Cdr::DDS_CDR); // Object that serializes the data.
     payload->encapsulation = ser.endianness() == eprosima::fastcdr::Cdr::BIG_ENDIANNESS ? CDR_BE : CDR_LE;

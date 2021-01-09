@@ -23,6 +23,9 @@
 
 #include <opencv2/opencv.hpp>
 
+#include <fastrtps/transport/UDPv4TransportDescriptor.h>
+#include <fastrtps/transport/TCPv4TransportDescriptor.h>
+
 using namespace eprosima::fastrtps;
 using namespace eprosima::fastrtps::rtps;
 using namespace eprosima::fastrtps::types;
@@ -47,6 +50,19 @@ bool PictureSubscriber::init()
     // PParam.rtps.builtin.discovery_config.m_simpleEDP.use_PublicationReaderANDSubscriptionWriter = true;
     // PParam.rtps.builtin.discovery_config.m_simpleEDP.use_PublicationWriterANDSubscriptionReader = true;
     // PParam.rtps.builtin.discovery_config.leaseDuration = c_TimeInfinite;
+    int32_t kind = LOCATOR_KIND_TCPv4;
+
+    Locator_t initial_peer_locator;
+    initial_peer_locator.kind = kind;
+    IPLocator::setIPv4(initial_peer_locator, "192.168.1.101");
+    initial_peer_locator.port = 5100;
+    PParam.rtps.builtin.initialPeersList.push_back(initial_peer_locator); // Publisher's channel
+
+    PParam.rtps.useBuiltinTransports = false;
+    std::shared_ptr<TCPv4TransportDescriptor> descriptor = std::make_shared<TCPv4TransportDescriptor>();
+    descriptor->sendBufferSize = 8912896; // 8.5Mb
+    descriptor->receiveBufferSize = 8912896; // 8.5Mb
+    PParam.rtps.userTransports.push_back(descriptor);
     PParam.rtps.setName("Participant_sub");
     mp_participant = Domain::createParticipant(PParam, (ParticipantListener*)&m_part_list);
 
@@ -62,7 +78,7 @@ bool PictureSubscriber::init()
     // Rparam.topic.historyQos.depth = 30;
     // Rparam.topic.resourceLimitsQos.max_samples = 5000;
     // Rparam.topic.resourceLimitsQos.allocated_samples = 100;
-    // Rparam.qos.m_reliability.kind = BEST_EFFORT_RELIABILITY_QOS;
+    Rparam.qos.m_reliability.kind = RELIABLE_RELIABILITY_QOS;
     // Rparam.qos.m_durability.kind = TRANSIENT_LOCAL_DURABILITY_QOS;
     mp_subscriber = Domain::createSubscriber(mp_participant, Rparam, (SubscriberListener*)&m_listener);
 
