@@ -1,0 +1,6 @@
+struct picture {
+    unsigned long index;
+    unsigned long size;
+    string note;
+    sequence<octet, 5000000> buffer;
+};
