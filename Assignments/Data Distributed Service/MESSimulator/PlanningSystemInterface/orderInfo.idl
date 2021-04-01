@@ -1,0 +1,6 @@
+struct orderInfo {
+    unsigned long orderNumber;  // order number, ONo
+    unsigned long partNumber;   // part number, PNo, equal to work plan number
+    unsigned short quantity;    // how much products to produce
+    string note;
+};
