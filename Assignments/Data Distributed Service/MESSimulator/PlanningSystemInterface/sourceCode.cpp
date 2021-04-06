@@ -10,9 +10,6 @@
  *
  */
 
-#include "Publisher.h"
-#include "Subscriber.h"
-
 #include <fastrtps/Domain.h>
 #include <fastrtps/log/Log.h>
 
@@ -25,19 +22,27 @@ using namespace rtps;
 #include <iostream>
 #include <stdexcept>
 #include <thread>
+#include <string> 
 
+// #include <spglog/spdlog.h>
+#include <opc/common/logger.h>
 
-using namespace OpcUa;
+#include "PlanningSystemInterface.h"
+
 
 int main(int argc, char ** argv){
     std::shared_ptr<spdlog::logger> logger = spdlog::stderr_color_mt("client");
-    //logger->set_level(spdlog::level::debug); 
+    logger->set_level(spdlog::level::debug); 
     try
     {
-        PlanningSystemInterfacePublisher mypub;
-        if(mypub.init())
+        PlanningSystemInterface planningSystemInterface(logger);
+
+        planningSystemInterface.placeAnOrder(4500, 9001, 3, "nope");
+
+        while(true)
         {
-            mypub.run(count, sleep);
+            logger->debug("keep running...");
+            std::this_thread::sleep_for(std::chrono::milliseconds(1500));
         }
     }
 

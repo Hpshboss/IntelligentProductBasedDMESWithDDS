@@ -26,31 +26,37 @@
 #include <fastrtps/participant/ParticipantListener.h>
 #include <fastrtps/participant/Participant.h>
 
+#include <fastrtps/TopicDataType.h>
+
+// #include <spglog/spdlog.h>
+// #include <fastrtps/log/Log.h>
+#include <opc/common/logger.h>
+
+#include <string>
+#include <map>
+#include <boost/any.hpp>
 
 
-class PlanningSystemInterfacePublisher
+class OrderInfoPublisher
 {
     public:
 
-        PlanningSystemInterfacePublisher();
+        OrderInfoPublisher(std::shared_ptr<spdlog::logger> logger);
 
-        virtual ~PlanningSystemInterfacePublisher();
+        virtual ~OrderInfoPublisher();
 
-        //!Initialize
+        // initial
         bool init();
 
         //!Publish a sample
-        bool publish(
-                bool waitForListener = true);
-
-        //!Run for number samples
-        void run(
-                uint32_t number,
-                uint32_t sleep);
-
-    private:
+        bool publish();
+        
         orderInfo m_orderInfo;
-
+        
+    private:
+    
+        orderInfoPubSubType m_type;
+        
         eprosima::fastrtps::Participant* mp_participant;
 
         eprosima::fastrtps::Publisher* mp_publisher;
@@ -84,11 +90,7 @@ class PlanningSystemInterfacePublisher
                     eprosima::fastrtps::rtps::ParticipantDiscoveryInfo&& info) override;
         } m_part_list;
 
-        void runThread(
-                uint32_t number,
-                uint32_t sleep);
-
-        orderInfoPubSubType m_type;
+        Common::Logger::SharedPtr Logger;
 };
 
 
