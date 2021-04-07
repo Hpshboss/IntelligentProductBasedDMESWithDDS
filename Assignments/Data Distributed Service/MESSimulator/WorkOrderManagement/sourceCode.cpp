@@ -27,7 +27,7 @@ using namespace rtps;
 // #include <spglog/spdlog.h>
 #include <opc/common/logger.h>
 
-#include "PlanningSystemInterface.h"
+#include "WorkOrderManagement.h"
 
 
 int main(int argc, char ** argv){
@@ -35,13 +35,12 @@ int main(int argc, char ** argv){
     logger->set_level(spdlog::level::debug); 
     try
     {
-        PlanningSystemInterface planningSystemInterface(logger);
+        WorkOrderManagement workOrderManagement(logger);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+        workOrderManagement.monitorPlacedOrder();
 
         while(true)
         {
-            planningSystemInterface.placeAnOrder(4500, 9001, 3, "nope");
             logger->debug("keep running...");
             std::this_thread::sleep_for(std::chrono::milliseconds(1500));
         }

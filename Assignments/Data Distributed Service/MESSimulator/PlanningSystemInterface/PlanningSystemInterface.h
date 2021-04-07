@@ -37,6 +37,7 @@ class PlanningSystemInterface
 public:
     PlanningSystemInterface(std::shared_ptr<spdlog::logger> logger) : Logger(logger), orderInfoPublisher(logger)
     {
+        orderInfoPublisher.init();
     };
 
     ~PlanningSystemInterface()

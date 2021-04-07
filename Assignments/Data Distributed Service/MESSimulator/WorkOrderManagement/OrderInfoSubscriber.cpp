@@ -13,7 +13,7 @@
 
 #include <fastrtps/attributes/ParticipantAttributes.h>
 #include <fastrtps/attributes/PublisherAttributes.h>
-#include <fastrtps/publisher/Publisher.h>
+#include <fastrtps/subscriber/Subscriber.h>
 #include <fastrtps/Domain.h>
 
 #include <fastrtps/TopicDataType.h>
@@ -31,7 +31,7 @@
 
 #include "orderInfo.h"
 
-#include "OrderInfoPublisher.h"
+#include "OrderInfoSubscriber.h"
 
 using namespace eprosima::fastrtps;
 using namespace eprosima::fastrtps::rtps;
@@ -39,15 +39,16 @@ using namespace eprosima::fastrtps::types;
 
 // using namespace cv;
 
-OrderInfoPublisher::OrderInfoPublisher(std::shared_ptr<spdlog::logger> logger)
+OrderInfoSubscriber::OrderInfoSubscriber(std::shared_ptr<spdlog::logger> logger)
     : mp_participant(nullptr)
-    , mp_publisher(nullptr)
+    , mp_subscriber(nullptr)
     , Logger(logger)
+    , m_listener(Logger)
 {
 }
 
 
-OrderInfoPublisher::~OrderInfoPublisher()
+OrderInfoSubscriber::~OrderInfoSubscriber()
 {
     Domain::removeParticipant(mp_participant);
 
@@ -55,16 +56,11 @@ OrderInfoPublisher::~OrderInfoPublisher()
 }
 
 
-bool OrderInfoPublisher::init()
+bool OrderInfoSubscriber::init()
 {
-    m_orderInfo.orderNumber(0);
-    m_orderInfo.partNumber(0);
-    m_orderInfo.quantity(0);
-    m_orderInfo.note("init");
-
     ParticipantAttributes PParam;
 
-    PParam.rtps.setName("Participant_pub_orderInfo");
+    PParam.rtps.setName("Participant_sub_orderInfo");
     mp_participant = Domain::createParticipant(PParam, (ParticipantListener*)&m_part_list);
 
     if (mp_participant == nullptr)
@@ -75,15 +71,15 @@ bool OrderInfoPublisher::init()
     //REGISTER THE TYPE
     Domain::registerType(mp_participant, &m_type);
 
-    //CREATE THE PUBLISHER
-    PublisherAttributes Wparam;
-    Wparam.topic.topicKind = NO_KEY;
-    Wparam.topic.topicDataType = "orderInfo";
-    Wparam.topic.topicName = "orderInfo";
-    Wparam.qos.m_reliability.kind = BEST_EFFORT_RELIABILITY_QOS;
+    //CREATE THE SUBSCRIBER
+    SubscriberAttributes Rparam;
+    Rparam.topic.topicKind = NO_KEY;
+    Rparam.topic.topicDataType = "orderInfo";
+    Rparam.topic.topicName = "orderInfo";
+    Rparam.qos.m_reliability.kind = BEST_EFFORT_RELIABILITY_QOS;
+    mp_subscriber = Domain::createSubscriber(mp_participant, Rparam, (SubscriberListener*)&m_listener);
 
-    mp_publisher = Domain::createPublisher(mp_participant, Wparam, (PublisherListener*)&m_listener);
-    if (mp_publisher == nullptr)
+    if (mp_subscriber == nullptr)
     {
         return false;
     }
@@ -91,25 +87,23 @@ bool OrderInfoPublisher::init()
     return true;
 }
 
-void OrderInfoPublisher::PubListener::onPublicationMatched(
-        Publisher* /*pub*/,
+void OrderInfoSubscriber::SubListener::onSubscriptionMatched(
+        Subscriber* /*sub*/,
         MatchingInfo& info)
 {
     if (info.status == MATCHED_MATCHING)
     {
         n_matched++;
-        firstConnected = true;
-        std::cout << "Publisher matched" << std::endl;
+        std::cout << "Subscriber matched" << std::endl;
     }
     else
     {
         n_matched--;
-        std::cout << "Publisher unmatched" << std::endl;
+        std::cout << "Subscriber unmatched" << std::endl;
     }
 }
 
-
-void OrderInfoPublisher::PartListener::onParticipantDiscovery(
+void OrderInfoSubscriber::PartListener::onParticipantDiscovery(
         Participant*,
         ParticipantDiscoveryInfo&& info)
 {
@@ -127,14 +121,30 @@ void OrderInfoPublisher::PartListener::onParticipantDiscovery(
     }
 }
 
-
-bool OrderInfoPublisher::publish()
+void OrderInfoSubscriber::SubListener::onNewDataMessage(
+        Subscriber* sub)
 {
-    if (m_listener.firstConnected || m_listener.n_matched > 0)
+    if (sub->takeNextData(&m_orderInfo, &m_info))
     {
-        mp_publisher->write(&m_orderInfo);
-        
-        return true;
+        if (m_info.sampleKind == ALIVE)
+        {
+            unsigned long orderNumber;
+            orderNumber = m_orderInfo.orderNumber();
+            // std::cout << "Order Numner: " << orderNumber <<  "; \t";
+
+            unsigned long partNumber;
+            partNumber = m_orderInfo.partNumber();
+            // std::cout << "Part Number: " << partNumber <<  "; \t";
+
+            unsigned short quantity;
+            quantity = m_orderInfo.quantity();
+            // std::cout << "Quantity: " << quantity <<  "; \t";
+
+
+            // std::cout << "Note: " << m_orderInfo.note() << "; \t";
+
+            Logger->debug("Order Numner: {};  Part Number: {};  Quantity: {};  Note:{}", orderNumber, partNumber, quantity, m_orderInfo.note());
+        }
     }
-    return false; 
 }
+
