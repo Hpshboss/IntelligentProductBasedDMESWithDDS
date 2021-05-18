@@ -1,0 +1,9 @@
+struct assignedOpRes {
+    unsigned long resourceId; // unsigned int for C++ 
+    unsigned long portId;
+    string GUID;
+    unsigned long carrierId;
+    string operationInfo;
+    string result;
+    string note;
+};

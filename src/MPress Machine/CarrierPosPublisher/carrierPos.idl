@@ -1,0 +1,6 @@
+struct carrierPos {
+    unsigned long resourceId; // unsigned int for C++ 
+    unsigned long portId;
+    unsigned long carrierId;
+    string note;
+};

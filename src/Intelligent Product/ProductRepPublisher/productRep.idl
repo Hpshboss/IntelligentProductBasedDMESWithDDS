@@ -1,0 +1,7 @@
+struct productRep {
+    string GUID;
+    unsigned long orderNumber;  // order number, ONo
+    unsigned long orderPosition;   // part number, PNo, equal to work plan number
+    string result;    // how much products to produce
+    string note;
+};
