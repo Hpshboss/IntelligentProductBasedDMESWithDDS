@@ -121,7 +121,7 @@ void AssignedOpPublisher::PartListener::onParticipantDiscovery(
     }
 }
 
-bool AssignedOpPublisher::publish(unsigned int resourceId, unsigned int portId, unsigned int orderNumber, unsigned int orderPosition, std::string operationInfo, std::string note)
+bool AssignedOpPublisher::publish(unsigned int resourceId, unsigned int portId, std::string GUID, unsigned int carrierId, std::string operationInfo, std::string note)
 {
     Logger->debug("AssignedOpPublisher::publish");
     try
@@ -130,8 +130,8 @@ bool AssignedOpPublisher::publish(unsigned int resourceId, unsigned int portId, 
         {
             m_assignedOp.resourceId(resourceId);
             m_assignedOp.portId(portId);
-            m_assignedOp.orderNumber(orderNumber);
-            m_assignedOp.orderPosition(orderPosition);
+            m_assignedOp.GUID(GUID);
+            m_assignedOp.carrierId(carrierId);
             m_assignedOp.operationInfo(operationInfo);
             m_assignedOp.note(note);
             mp_publisher->write(&m_assignedOp);

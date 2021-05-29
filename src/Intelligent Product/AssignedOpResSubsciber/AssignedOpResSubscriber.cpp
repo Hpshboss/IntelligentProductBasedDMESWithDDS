@@ -128,31 +128,33 @@ void AssignedOpResSubscriber::SubListener::onNewDataMessage(
     {
         if (m_info.sampleKind == ALIVE)
         {
+            m_messageStack = true;
+
             unsigned int resourceId;
             resourceId = m_assignedOpRes.resourceId();
-            LLogger->debug("resourceId: " + std::to_string(resourceId) + "; \t");
 
             unsigned int portId;
             portId = m_assignedOpRes.portId();
-            LLogger->debug("portId: " + std::to_string(portId) + "; \t");
 
             std::string GUID;
             GUID = m_assignedOpRes.GUID();
-            LLogger->debug("GUID: " + GUID + "; \t");
 
             unsigned int carrierId;
             carrierId = m_assignedOpRes.carrierId();
-            LLogger->debug("Carrier ID: " + std::to_string(carrierId) + "; \t");
 
             std::string operationInfo;
             operationInfo = m_assignedOpRes.operationInfo();
-            LLogger->debug("operationInfo: " + operationInfo + "; \t");
 
             std::string result;
             result = m_assignedOpRes.result();
-            LLogger->debug("result: " + result + "; \t");
 
-            LLogger->debug("Note: " + m_assignedOpRes.note() + "; \t");
+            LLogger->debug("resourceId: " + std::to_string(resourceId) + "; \t" +
+                           "portId: " + std::to_string(portId) + "; \t" +
+                           "GUID: " + GUID + "; \t" +
+                           "Carrier ID: " + std::to_string(carrierId) + "; \t" +
+                           "operationInfo: " + operationInfo + "; \t" +
+                           "result: " + result + "; \t" +
+                           "Note: " + m_assignedOpRes.note() + "; \t");
         }
     }
 }

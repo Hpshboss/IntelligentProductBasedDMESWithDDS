@@ -128,19 +128,21 @@ void CarrierPosSubscriber::SubListener::onNewDataMessage(
     {
         if (m_info.sampleKind == ALIVE)
         {
+            m_messageStack = true;
+
             unsigned int resourceId;
             resourceId = m_carrierPos.resourceId();
-            LLogger->debug("resourceId: " + std::to_string(resourceId) + "; \t");
 
             unsigned int portId;
             portId = m_carrierPos.portId();
-            LLogger->debug("portId: " + std::to_string(portId) + "; \t");
 
             unsigned int carrierId;
             carrierId = m_carrierPos.carrierId();
-            LLogger->debug("carrierId: " + std::to_string(carrierId) + "; \t");
 
-            LLogger->debug("Note: " + m_carrierPos.note() + "; \t");
+            LLogger->debug("resourceId: " + std::to_string(resourceId) + "; \t" +
+                           "portId: " + std::to_string(portId) + "; \t" + 
+                           "carrierId: " + std::to_string(carrierId) + "; \t" +
+                           "Note: " + m_carrierPos.note() + "; \t");
         }
     }
 }

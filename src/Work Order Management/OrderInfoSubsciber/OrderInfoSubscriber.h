@@ -48,6 +48,10 @@ class OrderInfoSubscriber
         // initial
         bool init();
         
+        orderInfo* public_orderInfo = &m_listener.m_orderInfo;
+
+        bool* public_messageStack = &m_listener.m_messageStack;
+        
     private:
         orderInfoPubSubType m_type;
         
@@ -77,6 +81,8 @@ class OrderInfoSubscriber
                 eprosima::fastrtps::SampleInfo_t m_info;
 
                 int n_matched;
+
+                bool m_messageStack = false;
 
                 Common::Logger::SharedPtr LLogger;
 

@@ -68,7 +68,11 @@ public:
 
 private:
     Common::Logger::SharedPtr Logger;
+
+public:
     AssignedOpSubscriber assignedOpSubscriber;
+
     CarrierPosPublisher carrierPosPublisher;
+    
     AssignedOpResPublisher assignedOpResPublisher;
 };

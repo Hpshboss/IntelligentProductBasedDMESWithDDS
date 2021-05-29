@@ -128,23 +128,24 @@ void ProductRepSubscriber::SubListener::onNewDataMessage(
     {
         if (m_info.sampleKind == ALIVE)
         {
+            m_messageStack = true;
             std::string GUID;
             GUID = m_productRep.GUID();
-            LLogger->debug("GUID: " + GUID + "; \t");
 
             unsigned int orderNumber;
             orderNumber = m_productRep.orderNumber();
-            LLogger->debug("Order Number: " + std::to_string(orderNumber) + "; \t");
 
             unsigned int orderPosition;
             orderPosition = m_productRep.orderPosition();
-            LLogger->debug("Part Number: " + std::to_string(orderPosition) + "; \t");
 
             std::string result;
             result = m_productRep.result();
-            LLogger->debug("Result: " + result + "; \t");
 
-            LLogger->debug("Note: " + m_productRep.note() + "; \t");
+            LLogger->debug("GUID: " + GUID + "; \t" + 
+                            "Order Number: " + std::to_string(orderNumber) + "; \t" +
+                            "Order Position: " + std::to_string(orderPosition) + "; \t" +
+                            "Result: " + result + "; \t" +
+                            "Note: " + m_productRep.note() + "; \t");
         }
     }
 }

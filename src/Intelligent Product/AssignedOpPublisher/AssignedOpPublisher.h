@@ -47,7 +47,7 @@ class AssignedOpPublisher
         // initial
         bool init();
 
-        bool publish(unsigned int resourceId, unsigned int portId, unsigned int orderNumber, unsigned int orderPosition, std::string operationInfo, std::string note);
+        bool publish(unsigned int resourceId, unsigned int portId, std::string GUID, unsigned int carrierId, std::string operationInfo, std::string note);
         
     private:
         assignedOp m_assignedOp;

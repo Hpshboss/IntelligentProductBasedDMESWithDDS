@@ -47,6 +47,10 @@ class ProductRepSubscriber
 
         // initial
         bool init();
+
+        productRep* public_productRep = &m_listener.m_productRep;
+
+        bool* public_messageStack = &m_listener.m_messageStack;
         
     private:
         productRepPubSubType m_type;
@@ -77,6 +81,8 @@ class ProductRepSubscriber
                 eprosima::fastrtps::SampleInfo_t m_info;
 
                 int n_matched;
+                
+                bool m_messageStack = false;
 
                 Common::Logger::SharedPtr LLogger;
 

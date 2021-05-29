@@ -47,6 +47,10 @@ class AssignedOpResSubscriber
 
         // initial
         bool init();
+
+        assignedOpRes* public_assignedOpRes = &m_listener.m_assignedOpRes;
+        
+        bool* public_messageStack = &m_listener.m_messageStack;
         
     private:
         assignedOpResPubSubType m_type;
@@ -77,6 +81,8 @@ class AssignedOpResSubscriber
                 eprosima::fastrtps::SampleInfo_t m_info;
 
                 int n_matched;
+
+                bool m_messageStack = false;
 
                 Common::Logger::SharedPtr LLogger;
 

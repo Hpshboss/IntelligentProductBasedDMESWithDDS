@@ -47,6 +47,10 @@ class CarrierPosSubscriber
 
         // initial
         bool init();
+
+        carrierPos* public_carrierPos = &m_listener.m_carrierPos;
+
+        bool* public_messageStack = &m_listener.m_messageStack;
         
     private:
         carrierPosPubSubType m_type;
@@ -77,6 +81,8 @@ class CarrierPosSubscriber
                 eprosima::fastrtps::SampleInfo_t m_info;
 
                 int n_matched;
+
+                bool m_messageStack = false;
 
                 Common::Logger::SharedPtr LLogger;
 

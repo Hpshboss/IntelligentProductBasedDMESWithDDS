@@ -62,10 +62,15 @@ public:
         recipeResPublisher.publish(GUID, orderNumber, orderPosition, note);
     };
 
-    bool assignOperation(unsigned int resourceId, unsigned int portId, unsigned int orderNumber, unsigned int orderPosition, std::string operationInfo, std::string note)
+    bool assignOperation(unsigned int resourceId, unsigned int portId, std::string GUID, unsigned int carrierId, std::string operationInfo, std::string note)
     {
         Logger->debug("assign operation");
-        assignedOpPublisher.publish(resourceId, portId, orderNumber, orderPosition, operationInfo, note);
+        assignedOpPublisher.publish(resourceId, portId, GUID, carrierId, operationInfo, note);
+    };
+    
+    bool reportProductResult(std::string GUID, unsigned int orderNumber, unsigned int orderPosition, std::string result, std::string note)
+    {
+        productRepPublisher.publish(GUID, orderNumber, orderPosition, result, note);
     };
 
     bool monitorCarrierPos()
@@ -78,11 +83,6 @@ public:
         recipeInfoSubscriber.init();
     };
 
-    bool reportProductResult(std::string GUID, unsigned int orderNumber, unsigned int orderPosition, std::string result, std::string note)
-    {
-        productRepPublisher.publish(GUID, orderNumber, orderPosition, result, note);
-    };
-
     bool monitorAssignedOpRes()
     {
         assignedOpResSubscriber.init();
@@ -90,10 +90,17 @@ public:
 
 private:
     Common::Logger::SharedPtr Logger;
+
+public:
     RecipeResPublisher recipeResPublisher;
+
     AssignedOpPublisher assignedOpPublisher;
-    CarrierPosSubscriber carrierPosSubscriber;
-    RecipeInfoSubscriber recipeInfoSubscriber;
+
     ProductRepPublisher productRepPublisher;
+
+    CarrierPosSubscriber carrierPosSubscriber;
+
+    RecipeInfoSubscriber recipeInfoSubscriber;
+    
     AssignedOpResSubscriber assignedOpResSubscriber;
 };

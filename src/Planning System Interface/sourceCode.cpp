@@ -36,16 +36,9 @@ int main(int argc, char ** argv){
     try
     {
         PlanningSystemInterface planningSystemInterface(logger);
-        logger->debug("main");
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        planningSystemInterface.placeAnOrder(3001, 9001, 32, "Nope");
-        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
-        planningSystemInterface.placeAnOrder(3001, 9001, 32, "Nope");
-        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
-        planningSystemInterface.placeAnOrder(3001, 9001, 32, "Nope");
-        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
-        planningSystemInterface.placeAnOrder(3001, 9001, 32, "Nope");
-        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+        logger->debug("Wait 5 seconds...");
+        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+        logger->debug("Place an order to Work Order Management...");
         planningSystemInterface.placeAnOrder(3001, 9001, 32, "Nope");
 
         while(true)

@@ -47,6 +47,10 @@ class RecipeResSubscriber
 
         // initial
         bool init();
+
+        recipeRes* public_recipeRes = &m_listener.m_recipeRes;
+
+        bool* public_messageStack = &m_listener.m_messageStack;
         
     private:
         recipeResPubSubType m_type;
@@ -77,6 +81,8 @@ class RecipeResSubscriber
                 eprosima::fastrtps::SampleInfo_t m_info;
 
                 int n_matched;
+
+                bool m_messageStack = false;
 
                 Common::Logger::SharedPtr LLogger;
 

@@ -128,19 +128,20 @@ void RecipeResSubscriber::SubListener::onNewDataMessage(
     {
         if (m_info.sampleKind == ALIVE)
         {
+            m_messageStack = true;
             std::string GUID;
             GUID = m_recipeRes.GUID();
-            LLogger->debug("Order Number: " + GUID + "; \t");
 
             unsigned int orderNumber;
             orderNumber = m_recipeRes.orderNumber();
-            LLogger->debug("Order Number: " + std::to_string(orderNumber) + "; \t");
 
             unsigned int orderPosition;
             orderPosition = m_recipeRes.orderPosition();
-            LLogger->debug("Quantity: " + std::to_string(orderPosition) + "; \t");
 
-            LLogger->debug("Note: " + m_recipeRes.note() + "; \t");
+            LLogger->debug("GUID: " + GUID + "; \t" + 
+                           "Order Number: " + std::to_string(orderNumber) + "; \t" +
+                           "Order Position: " + std::to_string(orderPosition) + "; \t" +
+                           "Note: " + m_recipeRes.note() + "; \t");
         }
     }
 }

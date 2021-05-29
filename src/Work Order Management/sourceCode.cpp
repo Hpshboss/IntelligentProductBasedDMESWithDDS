@@ -41,7 +41,8 @@ int main(int argc, char ** argv){
         workOrderManagement.monitorRecipeRes();
         workOrderManagement.monitorProductReport();
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+        logger->debug("Wait 5 seconds");
+        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
         workOrderManagement.assignRecipeInfo(3001, 1, "210:12:5;310:5:5;", "Nope");
         std::this_thread::sleep_for(std::chrono::milliseconds(1500));
         workOrderManagement.assignRecipeInfo(3001, 2, "210:12:5;310:5:5;", "Nope");
@@ -50,8 +51,22 @@ int main(int argc, char ** argv){
 
         while(true)
         {
-            logger->debug("keep running...");
-            std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+            if (*workOrderManagement.orderInfoSubscriber.public_messageStack == true)
+            {
+                *workOrderManagement.orderInfoSubscriber.public_messageStack = false;
+                logger->debug("main Order Number: " + std::to_string(workOrderManagement.orderInfoSubscriber.public_orderInfo->orderNumber()));
+            }
+            if (*workOrderManagement.productRepSubscriber.public_messageStack == true)
+            {
+                *workOrderManagement.productRepSubscriber.public_messageStack = false;
+                logger->debug("main GUID: " + workOrderManagement.productRepSubscriber.public_productRep->GUID());
+            }
+            if (*workOrderManagement.recipeResSubscriber.public_messageStack == true)
+            {
+                *workOrderManagement.recipeResSubscriber.public_messageStack = false;
+                logger->debug("main GUID: " + workOrderManagement.recipeResSubscriber.public_recipeRes->GUID());
+            }            
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
 

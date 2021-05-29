@@ -55,7 +55,11 @@ int main(int argc, char ** argv){
 
         while(true)
         {
-            logger->debug("keep running...");
+            if (*asrsMachine.assignedOpSubscriber.public_messageStack == true)
+            {
+                *asrsMachine.assignedOpSubscriber.public_messageStack = false;
+                logger->debug("main Operation Info: " + asrsMachine.assignedOpSubscriber.public_assignedOp->operationInfo());
+            }
             std::this_thread::sleep_for(std::chrono::milliseconds(1500));
         }
     }

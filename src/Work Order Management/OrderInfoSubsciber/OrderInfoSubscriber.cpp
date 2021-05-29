@@ -128,19 +128,28 @@ void OrderInfoSubscriber::SubListener::onNewDataMessage(
     {
         if (m_info.sampleKind == ALIVE)
         {
+            m_messageStack = true;
+            LLogger->debug("Receive an order");
             unsigned int orderNumber;
             orderNumber = m_orderInfo.orderNumber();
-            LLogger->debug("Order Number: " + std::to_string(orderNumber) + "; \t");
+            // public_orderInfo.orderNumber(m_orderInfo.orderNumber());
 
             unsigned int partNumber;
             partNumber = m_orderInfo.partNumber();
-            LLogger->debug("Part Number: " + std::to_string(partNumber) + "; \t");
+            // public_orderInfo.partNumber(m_orderInfo.partNumber());
 
             unsigned short quantity;
             quantity = m_orderInfo.quantity();
-            LLogger->debug("Quantity: " + std::to_string(quantity) + "; \t");
+            // public_orderInfo.quantity(m_orderInfo.quantity());
 
-            LLogger->debug("Note: " + m_orderInfo.note() + "; \t");
+            // public_orderInfo.note(m_orderInfo.note());
+
+            // LLogger->debug("Test Number in onNewDataMessage: " + std::to_string(testNumber));
+
+            LLogger->debug("Order Number: " + std::to_string(orderNumber) + "; \t" + 
+                            "Part Number: " + std::to_string(partNumber) + "; \t" +
+                            "Quantity: " + std::to_string(quantity) + "; \t" +
+                            "Note: " + m_orderInfo.note() + "; \t");
         }
     }
 }

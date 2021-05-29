@@ -54,15 +54,15 @@ int main(int argc, char ** argv){
         intelligentProduct.responseRecipe("21EC2020-3AEA-1069-A2DD-08002B30309D", 3001, 5, "Nope");
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1500));
-        intelligentProduct.assignOperation(30, 1, 3001, 1, "210:30:32;", "Nope");
+        intelligentProduct.assignOperation(30, 1, "21EC2020-3AEA-1069-A2DD-08002B303099", 1, "210:30:32;", "Nope");
         std::this_thread::sleep_for(std::chrono::milliseconds(1500));
-        intelligentProduct.assignOperation(30, 1, 3001, 2, "210:30:32;", "Nope");
+        intelligentProduct.assignOperation(30, 1, "21EC2020-3AEA-1069-B2DD-08002B303099", 2, "210:30:32;", "Nope");
         std::this_thread::sleep_for(std::chrono::milliseconds(1500));
-        intelligentProduct.assignOperation(30, 1, 3001, 3, "210:30:32;", "Nope");
+        intelligentProduct.assignOperation(30, 1, "21EC2020-3AEA-1069-C2DD-08002B303099", 3, "210:30:32;", "Nope");
         std::this_thread::sleep_for(std::chrono::milliseconds(1500));
-        intelligentProduct.assignOperation(30, 1, 3001, 4, "210:30:32;", "Nope");
+        intelligentProduct.assignOperation(30, 1, "21EC2020-3AEA-1069-D2DD-08002B303099", 4, "210:30:32;", "Nope");
         std::this_thread::sleep_for(std::chrono::milliseconds(1500));
-        intelligentProduct.assignOperation(30, 1, 3001, 5, "210:30:32;", "Nope");
+        intelligentProduct.assignOperation(30, 1, "21EC2020-3AEA-1069-E2DD-08002B303099", 5, "210:30:32;", "Nope");
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1500));
         intelligentProduct.reportProductResult("21EC2020-3AEA-1069-A2DD-08002B303099", 3001, 1, "DONE", "Nope");
@@ -73,8 +73,22 @@ int main(int argc, char ** argv){
 
         while(true)
         {
-            logger->debug("keep running...");
-            std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+            if (*intelligentProduct.assignedOpResSubscriber.public_messageStack == true)
+            {
+                *intelligentProduct.assignedOpResSubscriber.public_messageStack = false;
+                logger->debug("main GUID: " + intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->GUID());
+            }
+            if (*intelligentProduct.carrierPosSubscriber.public_messageStack == true)
+            {
+                *intelligentProduct.carrierPosSubscriber.public_messageStack = false;
+                logger->debug("main Carrier ID: " + std::to_string(intelligentProduct.carrierPosSubscriber.public_carrierPos->carrierId()));
+            }
+            if (*intelligentProduct.recipeInfoSubscriber.public_messageStack == true)
+            {
+                *intelligentProduct.recipeInfoSubscriber.public_messageStack = false;
+                logger->debug("main Work Plan: " + intelligentProduct.recipeInfoSubscriber.public_recipeInfo->workPlan());
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
 

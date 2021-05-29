@@ -56,7 +56,11 @@ int main(int argc, char ** argv){
 
         while(true)
         {
-            logger->debug("keep running...");
+            if (*mPressMachine.assignedOpSubscriber.public_messageStack == true)
+            {
+                *mPressMachine.assignedOpSubscriber.public_messageStack = false;
+                logger->debug("main Operation Info: " + mPressMachine.assignedOpSubscriber.public_assignedOp->operationInfo());
+            }
             std::this_thread::sleep_for(std::chrono::milliseconds(1500));
         }
     }

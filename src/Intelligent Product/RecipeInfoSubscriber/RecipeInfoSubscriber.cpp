@@ -128,19 +128,21 @@ void RecipeInfoSubscriber::SubListener::onNewDataMessage(
     {
         if (m_info.sampleKind == ALIVE)
         {
-            std::string orderNumber;
+            m_messageStack = true;
+
+            unsigned int orderNumber;
             orderNumber = m_recipeInfo.orderNumber();
-            LLogger->debug("Order Number: " + orderNumber + "; \t");
 
             unsigned int orderPosition;
             orderPosition = m_recipeInfo.orderPosition();
-            LLogger->debug("Order Position: " + std::to_string(orderPosition) + "; \t");
 
             std::string workPlan;
             workPlan = m_recipeInfo.workPlan();
-            LLogger->debug("Work Plan: " + workPlan + "; \t");
 
-            LLogger->debug("Note: " + m_recipeInfo.note() + "; \t");
+            LLogger->debug("Order Number: " + std::to_string(orderNumber) + "; \t" + 
+                           "Order Position: " + std::to_string(orderPosition) + "; \t" +
+                           "Work Plan: " + workPlan + "; \t" +
+                           "Note: " + m_recipeInfo.note() + "; \t");
         }
     }
 }

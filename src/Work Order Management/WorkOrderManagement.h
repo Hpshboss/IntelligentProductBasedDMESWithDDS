@@ -50,7 +50,12 @@ public:
     {
 
     };
-
+    
+    bool assignRecipeInfo(unsigned int orderNumber, unsigned int orderPosition, std::string workPlan, std::string note)
+    {
+        recipeInfoPublisher.publish(orderNumber, orderPosition, workPlan, note);
+    };
+    
     bool monitorPlacedOrder()
     {
         orderInfoSubscriber.init();
@@ -61,11 +66,6 @@ public:
         recipeResSubscriber.init();
     };
 
-    bool assignRecipeInfo(unsigned int orderNumber, unsigned int orderPosition, std::string workPlan, std::string note)
-    {
-        recipeInfoPublisher.publish(orderNumber, orderPosition, workPlan, note);
-    };
-
     bool monitorProductReport()
     {
         productRepSubscriber.init();
@@ -73,8 +73,13 @@ public:
 
 private:
     Common::Logger::SharedPtr Logger;
-    RecipeResSubscriber recipeResSubscriber;
-    OrderInfoSubscriber orderInfoSubscriber;
+
+public:
     RecipeInfoPublisher recipeInfoPublisher;
+
+    OrderInfoSubscriber orderInfoSubscriber;
+
+    RecipeResSubscriber recipeResSubscriber;
+
     ProductRepSubscriber productRepSubscriber;
 };
