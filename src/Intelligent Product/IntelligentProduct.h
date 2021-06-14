@@ -59,33 +59,33 @@ public:
     bool responseRecipe(std::string GUID, unsigned int orderNumber, unsigned int orderPosition, std::string note)
     {
         Logger->debug("response recipe");
-        recipeResPublisher.publish(GUID, orderNumber, orderPosition, note);
+        return recipeResPublisher.publish(GUID, orderNumber, orderPosition, note);
     };
 
     bool assignOperation(unsigned int resourceId, unsigned int portId, std::string GUID, unsigned int carrierId, std::string operationInfo, std::string note)
     {
         Logger->debug("assign operation");
-        assignedOpPublisher.publish(resourceId, portId, GUID, carrierId, operationInfo, note);
+        return assignedOpPublisher.publish(resourceId, portId, GUID, carrierId, operationInfo, note);
     };
     
     bool reportProductResult(std::string GUID, unsigned int orderNumber, unsigned int orderPosition, std::string result, std::string note)
     {
-        productRepPublisher.publish(GUID, orderNumber, orderPosition, result, note);
+        return productRepPublisher.publish(GUID, orderNumber, orderPosition, result, note);
     };
 
     bool monitorCarrierPos()
     {
-        carrierPosSubscriber.init();
+        return carrierPosSubscriber.init();
     };
 
     bool monitorRecipeInfo()
     {
-        recipeInfoSubscriber.init();
+        return recipeInfoSubscriber.init();
     };
 
     bool monitorAssignedOpRes()
     {
-        assignedOpResSubscriber.init();
+        return assignedOpResSubscriber.init();
     };
 
 private:

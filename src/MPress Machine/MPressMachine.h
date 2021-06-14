@@ -52,17 +52,17 @@ public:
 
     bool monitorAssignedOperation()
     {
-        assignedOpSubscriber.init();
+        return assignedOpSubscriber.init();
     };
 
     bool broadcastCarrierPosition(unsigned int resourceId, unsigned int portId, unsigned int carrierId, std::string note)
     {
-        carrierPosPublisher.publish(resourceId, portId, carrierId, note);
+        return carrierPosPublisher.publish(resourceId, portId, carrierId, note);
     };
 
     bool responseAssignedOperation(unsigned int resourceId, unsigned int portId, std::string GUID, unsigned int carrierId, std::string operationInfo, std::string result, std::string note)
     {
-        assignedOpResPublisher.publish(resourceId, portId, GUID, carrierId, operationInfo, result, note);
+        return assignedOpResPublisher.publish(resourceId, portId, GUID, carrierId, operationInfo, result, note);
     };
 
 

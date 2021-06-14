@@ -130,6 +130,9 @@ void RecipeInfoSubscriber::SubListener::onNewDataMessage(
         {
             m_messageStack = true;
 
+            std::string GUID;
+            GUID = m_recipeInfo.GUID();
+
             unsigned int orderNumber;
             orderNumber = m_recipeInfo.orderNumber();
 
@@ -139,7 +142,8 @@ void RecipeInfoSubscriber::SubListener::onNewDataMessage(
             std::string workPlan;
             workPlan = m_recipeInfo.workPlan();
 
-            LLogger->debug("Order Number: " + std::to_string(orderNumber) + "; \t" + 
+            LLogger->debug("GUID: " + GUID + "; \t" +
+                           "Order Number: " + std::to_string(orderNumber) + "; \t" + 
                            "Order Position: " + std::to_string(orderPosition) + "; \t" +
                            "Work Plan: " + workPlan + "; \t" +
                            "Note: " + m_recipeInfo.note() + "; \t");

@@ -51,24 +51,24 @@ public:
 
     };
     
-    bool assignRecipeInfo(unsigned int orderNumber, unsigned int orderPosition, std::string workPlan, std::string note)
+    bool assignRecipeInfo(std::string GUID, unsigned int orderNumber, unsigned int orderPosition, std::string workPlan, std::string note)
     {
-        recipeInfoPublisher.publish(orderNumber, orderPosition, workPlan, note);
+        return recipeInfoPublisher.publish(GUID, orderNumber, orderPosition, workPlan, note);
     };
     
     bool monitorPlacedOrder()
     {
-        orderInfoSubscriber.init();
+        return orderInfoSubscriber.init();
     };
 
     bool monitorRecipeRes()
     {
-        recipeResSubscriber.init();
+        return recipeResSubscriber.init();
     };
 
     bool monitorProductReport()
     {
-        productRepSubscriber.init();
+        return productRepSubscriber.init();
     };
 
 private:

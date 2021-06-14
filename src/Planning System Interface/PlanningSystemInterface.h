@@ -45,7 +45,7 @@ public:
     bool placeAnOrder(unsigned int orderNumber, unsigned int partNumber, unsigned short quantity, std::string note)
     {
         Logger->debug("placeAnOrder");
-        orderInfoPublisher.publish(orderNumber, partNumber, quantity, note);
+        return orderInfoPublisher.publish(orderNumber, partNumber, quantity, note);
     };
 
 private:

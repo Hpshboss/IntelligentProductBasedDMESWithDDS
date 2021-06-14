@@ -121,13 +121,14 @@ void RecipeInfoPublisher::PartListener::onParticipantDiscovery(
     }
 }
 
-bool RecipeInfoPublisher::publish(unsigned int orderNumber, unsigned int orderPosition, std::string workPlan, std::string note)
+bool RecipeInfoPublisher::publish(std::string GUID, unsigned int orderNumber, unsigned int orderPosition, std::string workPlan, std::string note)
 {
     Logger->debug("RecipeInfoPublisher::publish");
     try
     {
         if (m_listener.n_matched > 0) 
         {
+            m_recipeInfo.GUID(GUID);
             m_recipeInfo.orderNumber(orderNumber);
             m_recipeInfo.orderPosition(orderPosition);
             m_recipeInfo.workPlan(workPlan);

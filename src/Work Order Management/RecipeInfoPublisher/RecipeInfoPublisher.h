@@ -47,7 +47,7 @@ class RecipeInfoPublisher
         // initial
         bool init();
 
-        bool publish(unsigned int orderNumber, unsigned int orderPosition, std::string workPlan, std::string note);
+        bool publish(std::string GUID, unsigned int orderNumber, unsigned int orderPosition, std::string workPlan, std::string note);
         
     private:
         recipeInfo m_recipeInfo;
