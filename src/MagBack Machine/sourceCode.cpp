@@ -55,10 +55,11 @@ int main(int argc, char ** argv){
 
         while(true)
         {
+            // 機台偵測到小車，並停止輸送帶傳送
             if (portStop && !portWaitAssignedOp)
             {
                 logger->debug("Stopper RFID value is {}", magBackOpcuaAgent.readRfid());
-                magBackMachine.broadcastCarrierPosition(3, 1, magBackOpcuaAgent.readRfid(), "Nope");
+                magBackMachine.broadcastCarrierPosition(1, 1, magBackOpcuaAgent.readRfid(), "Nope");
 
                 portWaitAssignedOp = true;
                 std::thread waitAssigedOpAndExecuteThread(&waitAssigedOpAndExecute, &portStop, &portWaitAssignedOp, &machineState);
@@ -82,11 +83,11 @@ int main(int argc, char ** argv){
 
 void waitAssigedOpAndExecute(bool* portStop, bool* waitAssignedOp, festoLab::MachineStates* machineS)
 {
-    for (int i = 0; i < 40; i++)  // about 2 seconds timeout
+    logger->debug("wait assigned Operation and execute");
+    for (int i = 0; i < 60; i++)  // about 3 seconds timeout
     {
         if (*magBackMachine.assignedOpSubscriber.public_messageStack)
         {
-            *waitAssignedOp = false;
             *magBackMachine.assignedOpSubscriber.public_messageStack = false;
             logger->debug("assignedOperation Recieved.");
 
@@ -97,21 +98,27 @@ void waitAssigedOpAndExecute(bool* portStop, bool* waitAssignedOp, festoLab::Mac
             std::string operationInfo = magBackMachine.assignedOpSubscriber.public_assignedOp->operationInfo();
             std::string note = magBackMachine.assignedOpSubscriber.public_assignedOp->note();
 
-            if (resourceId == 3 && portId == 2 && carrierId == magBackOpcuaAgent.readRfid())
+            if (resourceId == 1 && portId == 1 && carrierId == magBackOpcuaAgent.readRfid())
             {
                 if (operationInfo == "None") 
                 {
+                    logger->debug("No Assignment");
                     *portStop = false;
-                    magBackMachine.responseAssignedOperation(resourceId, portId, GUID, carrierId, operationInfo, "DONE", "NOPE");
+                    magBackMachine.responseAssignedOperation(resourceId, portId, GUID, carrierId, operationInfo, "NONE", "NOPE");
                     magBackOpcuaAgent.monitorCarrierArrivalThenStop(portStop);
                     return; 
                 }
+
+                logger->debug("Ready to execute");
+                magBackMachine.responseAssignedOperation(resourceId, portId, GUID, carrierId, operationInfo, "READY", "NOPE");
 
                 magBackOpcuaAgent.addTransition((short)1, (short)carrierId, (short)carrierId);
                 magBackOpcuaAgent.transitionExecutable((short)1, true);
 
                 while( !magBackOpcuaAgent.automatic() ) { magBackOpcuaAgent.automatic(); };
                 *portStop = false;
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                *waitAssignedOp = false;
 
                 bool onBusy = false;
                 while (true)
@@ -134,10 +141,14 @@ void waitAssigedOpAndExecute(bool* portStop, bool* waitAssignedOp, festoLab::Mac
                 return;
             }
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));  // about 50 millisecond
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));  // about 50 millisecond
     }
 
+    logger->debug("No Response");
+    while( !magBackOpcuaAgent.automatic() ) { magBackOpcuaAgent.automatic(); };
     *portStop = false;
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    *waitAssignedOp = false;
     magBackOpcuaAgent.monitorCarrierArrivalThenStop(portStop);
 }
 

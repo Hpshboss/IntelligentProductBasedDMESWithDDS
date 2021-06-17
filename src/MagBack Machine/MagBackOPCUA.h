@@ -18,6 +18,9 @@
 #include <string>
 #include <stdexcept>
 #include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
 
 using namespace OpcUa;
 
@@ -115,6 +118,7 @@ namespace festoLab
         {
             rfidDataReadNode = client.GetNode(NodeId("\"dbRfidCntr\".\"ID1\".\"xRead\"", 3));
             rfidDataReadNode.SetValue(Variant(true));
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
             rfidDataNode = client.GetNode(NodeId("\"dbRfidData\".\"ID1\".\"iCode\"", 3));
             return rfidDataNode.GetValue().As<short>();
         };
@@ -123,6 +127,7 @@ namespace festoLab
         {
             rfidDataNode = client.GetNode(NodeId("\"dbRfidData\".\"ID1\".\"iCode\"", 3));
             rfidDataNode.SetValue(Variant(rfidData));
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
             rfidDataWriteNode = client.GetNode(NodeId("\"dbRfidCntr\".\"ID1\".\"xWrite\"", 3));
             rfidDataWriteNode.SetValue(Variant(true));
         };
@@ -150,29 +155,59 @@ namespace festoLab
         /*************************Monitor Carrier Arrival Functions*************************/
         bool readArrivingSensor() 
         {
-            try 
+            std::mutex m;
+            std::condition_variable cv;
+            bool retValue;
+
+            std::thread t([&cv, &retValue](Node* arrivingSensorNode)
             {
-                return arrivingSensorNode.GetValue().As<bool>();
-            }
-            catch (const std::exception & exc)
+                try 
+                {
+                    retValue = arrivingSensorNode->GetValue().As<bool>();
+                }
+                catch (const std::exception & exc) {}
+                cv.notify_one();
+            }, &arrivingSensorNode);
+
+            t.detach();
+            
+            std::unique_lock<std::mutex> l(m);
+            if (cv.wait_for(l, std::chrono::milliseconds(100)) == std::cv_status::timeout)
             {
-                Logger->error("Error in readArrivingSensor: {}", exc.what());
+                Logger->error("Error in readArrivingSensor: Timeout");
                 return false;
             }
+
+            return retValue;
         };
 
         bool readArrivalSensor() 
         {
-            // Logger->debug("Read Arrival Sensor");
-            try 
+            std::mutex m;
+            std::condition_variable cv;
+            bool retValue;
+
+            std::thread t([&cv, &retValue](Node* arrivalSensorNode)
             {
-                return arrivalSensorNode.GetValue().As<bool>();
-            }
-            catch (const std::exception & exc)
+                try 
+                {
+                    retValue = arrivalSensorNode->GetValue().As<bool>();
+                }
+                catch (const std::exception & exc) {}
+
+                cv.notify_one();
+            }, &arrivalSensorNode);
+
+            t.detach();
+            
+            std::unique_lock<std::mutex> l(m);
+            if (cv.wait_for(l, std::chrono::milliseconds(100)) == std::cv_status::timeout)
             {
-                Logger->error("Error in readArrivalSensor: {}", exc.what());
+                Logger->error("Error in readArrivalSensor: Timeout");
                 return false;
             }
+
+            return retValue;
         };
 
         void keepMonitoringCarrier(bool *isStop) 
@@ -180,8 +215,11 @@ namespace festoLab
             Logger->debug("Keep Monitoring Carrier");
             Variant cycleEndVariant(true);
 
+            int i = 0;
             while (!readArrivingSensor()) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                if (i % 10 == 0) { Logger->debug("reading stopper arriving sensor"); }
+                i++;
             }
 
             while (!readArrivalSensor()) {

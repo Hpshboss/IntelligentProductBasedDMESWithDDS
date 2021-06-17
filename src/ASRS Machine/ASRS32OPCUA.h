@@ -18,6 +18,8 @@
 #include <string>
 #include <stdexcept>
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 
 using namespace OpcUa;
 
@@ -130,6 +132,7 @@ namespace festoLab
         {
             rfid1DataReadNode = client.GetNode(NodeId("\"dbRfidCntr\".\"ID1\".\"xRead\"", 3));
             rfid1DataReadNode.SetValue(Variant(true));
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
             rfid1DataNode = client.GetNode(NodeId("\"dbRfidData\".\"ID1\".\"iCode\"", 3));
             return rfid1DataNode.GetValue().As<short>();
         };
@@ -138,6 +141,7 @@ namespace festoLab
         {
             rfid2DataReadNode = client.GetNode(NodeId("\"dbRfidCntr\".\"ID1\".\"xRead\"", 3));
             rfid2DataReadNode.SetValue(Variant(true));
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
             rfid2DataNode = client.GetNode(NodeId("\"dbRfidData\".\"ID1\".\"iCode\"", 3));
             return rfid1DataNode.GetValue().As<short>();
         };
@@ -146,6 +150,7 @@ namespace festoLab
         {
             rfid1DataNode = client.GetNode(NodeId("\"dbRfidData\".\"ID1\".\"iCode\"", 3));
             rfid1DataNode.SetValue(Variant(rfidData));
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
             rfid1DataWriteNode = client.GetNode(NodeId("\"dbRfidCtrl\".\"ID1\".\"xWrite\"", 3));
             rfid1DataWriteNode.SetValue(Variant(true));
         };
@@ -154,6 +159,7 @@ namespace festoLab
         {
             rfid2DataNode = client.GetNode(NodeId("\"dbRfidData\".\"ID2\".\"iCode\"", 3));
             rfid2DataNode.SetValue(Variant(rfidData));
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
             rfid2DataWriteNode = client.GetNode(NodeId("\"dbRfidCtrl\".\"ID2\".\"xWrite\"", 3));
             rfid2DataWriteNode.SetValue(Variant(true));
         };
@@ -194,39 +200,71 @@ namespace festoLab
         // Stopper 1
         bool readStopper1ArrivingSensor() 
         {
-            try
+            std::mutex m;
+            std::condition_variable cv;
+            bool retValue;
+
+            std::thread t([&cv, &retValue](Node* arriving1SensorNode)
             {
-                return arriving1SensorNode.GetValue().As<bool>();
-            }
-            catch (const std::exception & exc)
+                try 
+                {
+                    retValue = arriving1SensorNode->GetValue().As<bool>();
+                }
+                catch (const std::exception & exc) {}
+                cv.notify_one();
+            }, &arriving1SensorNode);
+
+            t.detach();
+            
+            std::unique_lock<std::mutex> l(m);
+            if (cv.wait_for(l, std::chrono::milliseconds(100)) == std::cv_status::timeout)
             {
-                Logger->error("Error in readStopper1ArrivingSensor: {}", exc.what());
+                Logger->error("Error in readAStopper1rrivingSensor: Timeout");
                 return false;
             }
+
+            return retValue;
         };
 
         bool readStopper1ArrivalSensor() 
         {
-            // Logger->debug("Read Arrival Sensor");
-            try
+            std::mutex m;
+            std::condition_variable cv;
+            bool retValue;
+
+            std::thread t([&cv, &retValue](Node* arrival1SensorNode)
             {
-                return arrival1SensorNode.GetValue().As<bool>();
-            }
-            catch (const std::exception & exc)
+                try 
+                {
+                    retValue = arrival1SensorNode->GetValue().As<bool>();
+                }
+                catch (const std::exception & exc) {}
+                cv.notify_one();
+            }, &arrival1SensorNode);
+
+            t.detach();
+            
+            std::unique_lock<std::mutex> l(m);
+            if (cv.wait_for(l, std::chrono::milliseconds(100)) == std::cv_status::timeout)
             {
-                Logger->error("Error in readStopper1ArrivalSensor: {}", exc.what());
+                Logger->error("Error in readAStopper1rrivalSensor: Timeout");
                 return false;
             }
+
+            return retValue;
         };
 
         void keepMonitoringCarrierStopper1(bool *isStop) 
         {
-            Logger->debug("Keep Monitoring Carrier");
+            Logger->debug("Keep Monitoring Carrier on Stopper 1");
             Variant cycleEndVariant(true);
 
+            int i = 0;
             while (!readStopper1ArrivingSensor()) 
             {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                if (i % 10 == 0) { Logger->debug("reading stopper1 arriving sensor"); }
+                i++;
             }
 
             while (!readStopper1ArrivalSensor()) 
@@ -248,29 +286,58 @@ namespace festoLab
         // Stopper 2
         bool readStopper2ArrivingSensor() 
         {
-            try
+            std::mutex m;
+            std::condition_variable cv;
+            bool retValue;
+
+            std::thread t([&cv, &retValue](Node* arriving2SensorNode)
             {
-                return arriving1SensorNode.GetValue().As<bool>();
-            }
-            catch (const std::exception & exc)
+                try
+                {
+                    retValue = arriving2SensorNode->GetValue().As<bool>();
+                }
+                catch (const std::exception & exc) {}
+                cv.notify_one();
+            }, &arriving2SensorNode);
+
+            t.detach();
+            
+            std::unique_lock<std::mutex> l(m);
+            if (cv.wait_for(l, std::chrono::milliseconds(100)) == std::cv_status::timeout)
             {
-                Logger->error("Error in readAStopper2rrivingSensor: {}", exc.what());
+                Logger->error("Error in readAStopper2rrivingSensor: Timeout");
                 return false;
             }
+
+            return retValue;
         };
 
         bool readStopper2ArrivalSensor() 
         {
-            // Logger->debug("Read Arrival Sensor");
-            try
+            std::mutex m;
+            std::condition_variable cv;
+            bool retValue;
+
+            std::thread t([&cv, &retValue](Node* arrival2SensorNode)
             {
-                return arrival1SensorNode.GetValue().As<bool>();
-            }
-            catch (const std::exception & exc)
+                try
+                {
+                    retValue = arrival2SensorNode->GetValue().As<bool>();
+                }
+                catch (const std::exception & exc) {}
+                cv.notify_one();
+            }, &arrival2SensorNode);
+
+            t.detach();
+            
+            std::unique_lock<std::mutex> l(m);
+            if (cv.wait_for(l, std::chrono::milliseconds(100)) == std::cv_status::timeout)
             {
-                Logger->error("Error in readStopper2ArrivalSensor: {}", exc.what());
+                Logger->error("Error in readAStopper2rrivalSensor: Timeout");
                 return false;
             }
+
+            return retValue;
         };
 
         void keepMonitoringCarrierStopper2(bool *isStop) 
@@ -280,7 +347,7 @@ namespace festoLab
 
             while (!readStopper2ArrivingSensor()) 
             {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
 
             while (!readStopper2ArrivalSensor()) 

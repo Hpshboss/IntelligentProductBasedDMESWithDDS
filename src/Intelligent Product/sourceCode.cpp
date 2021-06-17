@@ -52,6 +52,7 @@ std::vector<int> parameterNumbers;
 std::vector<int> parameterValues;
 std::vector<int> detailResourceIds;
 
+void broadcastIntelliegntProductState();
 void waitAssignedOpResAndUpdateNextStepNumber(unsigned int LresourceId, unsigned int LportId, std::string LGUID, unsigned int LcarrierId, std::string LoperationInfo);
 std::vector<std::string> split(const std::string& str, const std::string& delim);
 int getVectorIndex(std::vector<int> vectorInstance, int elementValue);
@@ -60,36 +61,55 @@ std::shared_ptr<spdlog::logger> logger = spdlog::stderr_color_mt("client");
 IntelligentProduct intelligentProduct(logger);
 
 int main(int argc, char ** argv){
-    
     logger->set_level(spdlog::level::debug); 
     try
     {
-        
         logger->debug("main");
 
         intelligentProduct.monitorCarrierPos();
         intelligentProduct.monitorRecipeInfo();
         intelligentProduct.monitorAssignedOpRes();
 
+        std::thread broadcastIntelliegntProductStateThread(&broadcastIntelliegntProductState);
+        broadcastIntelliegntProductStateThread.detach();
+
         while(true)
         {
+            // 已接收訂單，並開始執行任務
             if (onBusy == true)
             {
+                // 任務完成並回報Work Order Management
                 if (nextStepNumber == -1)
                 {
+                    logger->debug("Task Complete");
                     intelligentProduct.reportProductResult(GUID, orderNumber, orderPosition, "DONE", "Nope");
+                    onBusy = false;
+                    *intelligentProduct.recipeInfoSubscriber.public_messageStack = false;
                 }
 
+                // 各機台回報停靠小車
                 if (*intelligentProduct.carrierPosSubscriber.public_messageStack == true)
                 {
+                    
                     *intelligentProduct.carrierPosSubscriber.public_messageStack = false;
                     unsigned int resourceId = intelligentProduct.carrierPosSubscriber.public_carrierPos->resourceId();
                     unsigned int portId = intelligentProduct.carrierPosSubscriber.public_carrierPos->portId();
                     unsigned int carrierId = intelligentProduct.carrierPosSubscriber.public_carrierPos->carrierId();
 
+                    if (carrierId == 0) 
+                    {
+                        logger->debug("{}th resource has error on reading rfid due to 0th carrier", resourceId);
+                        continue;
+                    }
+
+                    logger->debug("Carrier {} Stops at {}th resource", std::to_string(carrierId), std::to_string(resourceId));
+
+                    logger->debug("resources id is {}", std::to_string(resourceIds[getVectorIndex(stepNumbers, nextStepNumber)]));
+
                     // ASRS restores and intelligent product binds a carrier
                     if (resourceIds[getVectorIndex(stepNumbers, nextStepNumber)] == resourceId && bindedCarrierId == 0) 
                     {
+                        logger->debug("ASRS will restore...");
                         bindedCarrierId = carrierId;
 
                         // Operation format: "OPNo:Par_1:Par_2:...:Par_n"
@@ -99,7 +119,7 @@ int main(int argc, char ** argv){
 
                         for (int i = 0; i < detailOperationNumbers.size(); i++)
                         {
-                            if (operationNumber == detailOperationNumbers[i] && resourceId == resourceIds[i])
+                            if (operationNumber == detailOperationNumbers[i] && resourceId == detailResourceIds[i])
                             {
                                 operationInfo += ":" + std::to_string(parameterValues[i]);
                             }
@@ -114,17 +134,17 @@ int main(int argc, char ** argv){
                                                                                    operationInfo);
                         waitAssignedOpResAndUpdateNextStepNumberThread.detach();
                     }
-
                     // MagBack put, MPress press or ASRS store
-                    if (resourceIds[getVectorIndex(stepNumbers, nextStepNumber)] == resourceId && bindedCarrierId == carrierId)
+                    else if (resourceIds[getVectorIndex(stepNumbers, nextStepNumber)] == resourceId && bindedCarrierId == carrierId)
                     {
+                        logger->debug("{}th resource will execute", resourceId);
                         std::string operationInfo = "";
                         int operationNumber = operationNumbers[getVectorIndex(stepNumbers, nextStepNumber)];
                         operationInfo += std::to_string(operationNumber);
 
                         for (int i = 0; i < detailOperationNumbers.size(); i++)
                         {
-                            if (operationNumber == detailOperationNumbers[i] && resourceId == resourceIds[i])
+                            if (operationNumber == detailOperationNumbers[i] && resourceId == detailResourceIds[i])
                             {
                                 operationInfo += ":" + std::to_string(parameterValues[i]);
                             }
@@ -140,10 +160,26 @@ int main(int argc, char ** argv){
                                                                                    operationInfo);
                         waitAssignedOpResAndUpdateNextStepNumberThread.detach();
                     }
+                    // 為符合next step number操作所對應機台
+                    else if (bindedCarrierId == carrierId)
+                    {
+                        logger->debug("{}th resource will ignore...", resourceId);
+                        std::string operationInfo = "None";
+                        intelligentProduct.assignOperation(resourceId, portId, GUID, carrierId, operationInfo, "Nope");
+                        std::thread waitAssignedOpResAndUpdateNextStepNumberThread(&waitAssignedOpResAndUpdateNextStepNumber, 
+                                                                                   resourceId, 
+                                                                                   portId, 
+                                                                                   GUID, 
+                                                                                   carrierId, 
+                                                                                   operationInfo);
+                        waitAssignedOpResAndUpdateNextStepNumberThread.detach();
+                    }
                 }
             }
+            // 無任務
             else
             {
+                // 收到Work Order Management任務
                 if (*intelligentProduct.recipeInfoSubscriber.public_messageStack == true)
                 {
                     onBusy = true;
@@ -151,26 +187,39 @@ int main(int argc, char ** argv){
                     orderNumber = intelligentProduct.recipeInfoSubscriber.public_recipeInfo->orderNumber();
                     orderPosition = intelligentProduct.recipeInfoSubscriber.public_recipeInfo->orderPosition();
 
-                    // workInfo format: "WPNo;ResourceId_n:ONo_1:Par_1_1:...Par_1_n;...;ResurceId_n:ONo_n:Par_n_1:...Par_n_n"
-                    std::vector<std::string>workedPlan = split(intelligentProduct.recipeInfoSubscriber.public_recipeInfo->workPlan(), ";");
-                    for (int i = 0; workedPlan.size() - 1; i++)
+                    logger->debug("Receive an order whose order number and position is {} and {}", orderNumber, orderPosition);
+
+                    try 
                     {
-                        workPlanNumbers.push_back(std::stoi(workedPlan[0]));
-                        stepNumbers.push_back((i + 1) * 10);
-                        std::vector<std::string> workedOperation = split(workedPlan[i + 1], ":");
-                        operationNumbers.push_back(std::stoi(workedOperation[1]));
-                        resourceIds.push_back(std::stoi(workedOperation[0]));
-                        for (int j = 0; j < workedOperation.size() - 2; j++)
+                        // workInfo format: "WPNo;ResourceId_n:ONo_1:Par_1_1:...Par_1_n;...;ResurceId_n:ONo_n:Par_n_1:...Par_n_n"
+                        std::vector<std::string>workedPlan = split(intelligentProduct.recipeInfoSubscriber.public_recipeInfo->workPlan(), ";");
+                        for (int i = 0; i < workedPlan.size() - 1; i++)
                         {
-                            detailOperationNumbers.push_back(std::stoi(workedOperation[1]));
-                            parameterNumbers.push_back(j + 1);
-                            parameterValues.push_back(std::stoi(workedOperation[j + 2]));
-                            detailResourceIds.push_back(std::stoi(workedOperation[0]));
+                            workPlanNumbers.push_back(std::stoi(workedPlan[0]));
+                            stepNumbers.push_back((i + 1) * 10);
+                            std::vector<std::string> workedOperation = split(workedPlan[i + 1], ":");
+                            operationNumbers.push_back(std::stoi(workedOperation[1]));
+                            resourceIds.push_back(std::stoi(workedOperation[0]));
+                            for (int j = 0; j < workedOperation.size() - 2; j++)
+                            {
+                                detailOperationNumbers.push_back(std::stoi(workedOperation[1]));
+                                parameterNumbers.push_back(j + 1);
+                                parameterValues.push_back(std::stoi(workedOperation[j + 2]));
+                                detailResourceIds.push_back(std::stoi(workedOperation[0]));
+                            }
                         }
+                        logger->debug("resource id: {} {} {} {}", resourceIds[0], resourceIds[1], resourceIds[2], resourceIds[3]);
+                        nextStepNumber = stepNumbers[0];
+                        logger->debug("Response to WOM with ack");
+                        intelligentProduct.responseRecipe(GUID, orderNumber, orderPosition, "Nope");
                     }
-                    nextStepNumber = stepNumbers[0];
+                    catch (const std::exception & exc)
+                    {
+                        onBusy = true;
+                        logger->debug("Work Plan Format Is Incorrect");
+                    }
+                    
                 }
-                intelligentProduct.responseRecipe(GUID, orderNumber, orderPosition, "Nope");
             }
         }
     }
@@ -188,6 +237,24 @@ int main(int argc, char ** argv){
     return -1;
 }
 
+void broadcastIntelliegntProductState()
+{
+    while (true)
+    {
+        if (onBusy == false)
+        {
+            intelligentProduct.responseRecipe(GUID, 0, 0, "Nope");
+            std::this_thread::sleep_for(std::chrono::milliseconds(2500));
+        }
+        else if (onBusy ==true)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+        }
+    }
+    
+}
+
+
 // wait assignedOpRes and update next step number
 void waitAssignedOpResAndUpdateNextStepNumber(unsigned int LresourceId, 
                                               unsigned int LportId, 
@@ -195,7 +262,7 @@ void waitAssignedOpResAndUpdateNextStepNumber(unsigned int LresourceId,
                                               unsigned int LcarrierId, 
                                               std::string LoperationInfo)
 {
-    while (true)  // about 2 seconds timeout
+    for (int i = 0; i < 60; i++)  // about 3 second timeout
     {
         if (*intelligentProduct.assignedOpResSubscriber.public_messageStack == true)
         {
@@ -205,18 +272,47 @@ void waitAssignedOpResAndUpdateNextStepNumber(unsigned int LresourceId,
                 LGUID == intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->GUID() &&
                 LcarrierId == intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->carrierId() &&
                 LoperationInfo == intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->operationInfo() &&
-                intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->result() == "DONE")
+                intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->result() == "READY")
             {
-                int index = getVectorIndex(stepNumbers, nextStepNumber);
-                if (index == stepNumbers.size() - 1) 
+                logger->debug("{}th has been ready", LresourceId);
+                while (true)
                 {
-                    nextStepNumber = -1;
-                    break;
+                    if (*intelligentProduct.assignedOpResSubscriber.public_messageStack == true)
+                    {
+                        *intelligentProduct.assignedOpResSubscriber.public_messageStack = false;
+                        if (LresourceId == intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->resourceId() &&
+                            LportId == intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->portId() &&
+                            LGUID == intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->GUID() &&
+                            LcarrierId == intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->carrierId() &&
+                            LoperationInfo == intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->operationInfo() &&
+                            intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->result() == "DONE")
+                        {
+                            logger->debug("{}th resource's operation completed");
+                            int index = getVectorIndex(stepNumbers, nextStepNumber);
+                            if (index == stepNumbers.size() - 1) 
+                            {
+                                nextStepNumber = -1;
+                                logger->debug("The Product is complete");
+                                return;
+                            }
+                            nextStepNumber = stepNumbers[index + 1];
+                            logger->debug("The next step number is {}", nextStepNumber);
+                            return;
+                        }
+                    }
                 }
-                nextStepNumber = stepNumbers[index + 1];
-                break;
+            }
+            if (LresourceId == intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->resourceId() &&
+                LportId == intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->portId() &&
+                LGUID == intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->GUID() &&
+                LcarrierId == intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->carrierId() &&
+                LoperationInfo == intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->operationInfo() &&
+                intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->result() == "NONE")
+            {
+                return;
             }
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
 

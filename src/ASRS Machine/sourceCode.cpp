@@ -33,19 +33,17 @@ using namespace rtps;
 
 #include "ASRS32OPCUA.h"
 
-void waitAssigedOpAndExecute(bool* portStop, 
-                             bool* waitAssignedOp, 
-                             festoLab::MachineStates* machineS);
+void waitAssigedOpAndExecute(bool* portStop, bool* waitAssignedOp, festoLab::MachineStates* machineS);
 std::vector<std::string> split(const std::string& str, const std::string& delim);
+
 std::shared_ptr<spdlog::logger> logger = spdlog::stderr_color_mt("client");
 festoLab::ASRS32OpcuaAgent asrs32OpcuaAgent(logger);
 ASRSMachine asrsMachine(logger);
+
 int main(int argc, char ** argv){
-    
     logger->set_level(spdlog::level::debug);
     try
     {
-        
         bool port1Stop = false;
         bool port1WaitAssignedOp = false;
         asrs32OpcuaAgent.monitorCarrierArrivalThenStopStopper1(&port1Stop);
@@ -53,11 +51,11 @@ int main(int argc, char ** argv){
         festoLab::MachineStates machineState;
         asrs32OpcuaAgent.monitorMachineState(&machineState);
         
-        
         asrsMachine.monitorAssignedOperation();
 
         while(true)
         {
+            // 機台偵測到小車，並停止輸送帶傳送
             if (port1Stop && !port1WaitAssignedOp)    // to publish carrier number
             {
                 logger->debug("Stopper RFID value is {}", asrs32OpcuaAgent.readStopper1Rfid());
@@ -91,11 +89,11 @@ void waitAssigedOpAndExecute(bool* portStop,
                              bool* waitAssignedOp, 
                              festoLab::MachineStates* machineS)
 {
-    for (int i = 0; i < 40; i++)  // about 2 seconds timeout
+    logger->debug("wait assigned Operation and execute");
+    for (int i = 0; i < 60; i++)  // about 3 seconds timeout
     {
         if (*asrsMachine.assignedOpSubscriber.public_messageStack)
         {
-            *waitAssignedOp = false;
             *asrsMachine.assignedOpSubscriber.public_messageStack = false;
             logger->debug("assignedOperation Recieved.");
 
@@ -110,19 +108,26 @@ void waitAssigedOpAndExecute(bool* portStop,
             {
                 if (operationInfo == "None") 
                 {
+                    logger->debug("No Assignment");
                     *portStop = false;
-                    asrsMachine.responseAssignedOperation(resourceId, portId, GUID, carrierId, operationInfo, "DONE", "NOPE");
+                    asrsMachine.responseAssignedOperation(resourceId, portId, GUID, carrierId, operationInfo, "NONE", "Nope");
                     asrs32OpcuaAgent.monitorCarrierArrivalThenStopStopper1(portStop);
                     return; 
                 }
 
+                logger->debug("Ready to execute");
+                asrsMachine.responseAssignedOperation(resourceId, portId, GUID, carrierId, operationInfo, "READY", "Nope");
+
                 std::vector<std::string> funAndPar = split(operationInfo, ":");
-                asrs32OpcuaAgent.addTransition((short)1, (short)carrierId, std::stoi(funAndPar[0]), std::stoi(funAndPar[1]), (short)carrierId);
+                asrs32OpcuaAgent.addTransition((short)1, (short)carrierId, std::stoi(funAndPar[1]), std::stoi(funAndPar[2]), (short)carrierId);
                 asrs32OpcuaAgent.transitionExecutable((short)1, true);
 
                 while( !asrs32OpcuaAgent.automatic() ) { asrs32OpcuaAgent.automatic(); };
                 *portStop = false;
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                *waitAssignedOp = false;
 
+                // 等待機台加工完成
                 bool onBusy = false;
                 while (true)
                 {
@@ -137,6 +142,7 @@ void waitAssigedOpAndExecute(bool* portStop,
                         break;
                     }
                 }
+
                 asrs32OpcuaAgent.transitionExecutable((short)1, false);
                 asrsMachine.responseAssignedOperation(resourceId, portId, GUID, carrierId, operationInfo, "DONE", "NOPE");
 
@@ -144,11 +150,15 @@ void waitAssigedOpAndExecute(bool* portStop,
                 return;
             }
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));  // about 50 millisecond
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));  // about 50 millisecond
     }
 
-    logger->debug("No Assignment");
+    logger->debug("No Response");
+    while( !asrs32OpcuaAgent.automatic() ) { asrs32OpcuaAgent.automatic(); };
+    
     *portStop = false;
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    *waitAssignedOp = false;
     asrs32OpcuaAgent.monitorCarrierArrivalThenStopStopper1(portStop);
 }
 

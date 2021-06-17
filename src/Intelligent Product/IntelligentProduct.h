@@ -58,13 +58,11 @@ public:
 
     bool responseRecipe(std::string GUID, unsigned int orderNumber, unsigned int orderPosition, std::string note)
     {
-        Logger->debug("response recipe");
         return recipeResPublisher.publish(GUID, orderNumber, orderPosition, note);
     };
 
     bool assignOperation(unsigned int resourceId, unsigned int portId, std::string GUID, unsigned int carrierId, std::string operationInfo, std::string note)
     {
-        Logger->debug("assign operation");
         return assignedOpPublisher.publish(resourceId, portId, GUID, carrierId, operationInfo, note);
     };
     

@@ -80,6 +80,7 @@ int main(int argc, char ** argv){
 
         while(true)
         {
+            // 收到來自Planning System Interface的訂單
             if (*workOrderManagement.orderInfoSubscriber.public_messageStack == true)
             {
                 *workOrderManagement.orderInfoSubscriber.public_messageStack = false;
@@ -103,6 +104,7 @@ int main(int argc, char ** argv){
                 }
             }
 
+            // Intelligent Product 在生產完成後會回報的訊息
             if (*workOrderManagement.productRepSubscriber.public_messageStack == true)
             {
                 *workOrderManagement.productRepSubscriber.public_messageStack = false;
@@ -126,7 +128,8 @@ int main(int argc, char ** argv){
                     }
                 }
             }
-
+            
+            // Intelligent Product 廣播自身狀況或回報接收訂單成功
             if (*workOrderManagement.recipeResSubscriber.public_messageStack == true)
             {
                 *workOrderManagement.recipeResSubscriber.public_messageStack = false;
@@ -135,29 +138,42 @@ int main(int argc, char ** argv){
                 unsigned int orderNumber = workOrderManagement.productRepSubscriber.public_productRep->orderNumber();
                 unsigned int orderPosition = workOrderManagement.productRepSubscriber.public_productRep->orderPosition();
 
+                // 當Intelligent Product為廣播狀態，且為沒任務狀態
                 if (orderNumber == 0 && orderPosition == 0)
                 {
                     int index = getVectorIndex(positionStates, "WAIT");
+                    
                     int workPlanNumber = 0;
-                    if (detailPartNumbers[index] == 1214)
+                    if (index > -1 && detailPartNumbers[index] == 1215)
                     {
-                        workPlanNumber = 1214;
+                        logger->debug("Delegate No Drilling and No Heating Product");
+                        workPlanNumber = 1215;
+                        // 委派任務
+                        workOrderManagement.assignRecipeInfo(GUID, 
+                                                             orderNumbers[index], 
+                                                             orderPositions[index], 
+                                                             getWorkPlanPackage(workPlanNumber), 
+                                                             "Nope");
                     }
-                    workOrderManagement.assignRecipeInfo(GUID, 
-                                                         orderNumbers[index], 
-                                                         orderPositions[index], 
-                                                         getWorkPlanPackage(workPlanNumber), 
-                                                         "Nope");
                 }
-
+                
+                // 收到Intelligent Product接收訂單成功
                 for (int i = 0; i < orderNumbers.size(); i++)
                 {
                     if (orderNumbers[i] == orderNumber &&
                         orderPositions[i] == orderPosition)
                     {
+                        // 更新資料庫
                         GUIDs[i] = GUID;
                     }
                 }
+                
+                // 防止同一個Intelligent Product在Work Order Management處理訂單在廣播一次狀態
+                if (*workOrderManagement.recipeResSubscriber.public_messageStack == true)
+                {
+                    *workOrderManagement.recipeResSubscriber.public_messageStack = false;
+                }
+                
             }
         }
     }
@@ -178,7 +194,7 @@ int main(int argc, char ** argv){
 void initializeDatabase()
 {
     //*************************Work Plans*************************//
-    workPlanNumbers = {1214, 1214, 1214, 1214};  // refer to FestoMes.accdb
+    workPlanNumbers = {1215, 1215, 1215, 1215};  // refer to FestoMes.accdb
     stepNumbers = {10, 20, 30, 40};
 
     // 212: release a defined part on stopper 1
@@ -194,7 +210,7 @@ void initializeDatabase()
     parameterValues = {
         12, 210,  // 12: restore on stopper 1; 210: certain part number
         40, 10,   // 40: press[N], 10: time[s]
-        11, 0    // 11: store on stopper 1
+        11, 1215    // 11: store on stopper 1
     };
 }
 
