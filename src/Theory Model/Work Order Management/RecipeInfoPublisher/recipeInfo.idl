@@ -1,0 +1,7 @@
+struct recipeInfo {
+    string GUID;
+    unsigned long orderNumber; // unsigned int for C++ 
+    unsigned long orderPosition;
+    string workPlan;
+    string note;
+};

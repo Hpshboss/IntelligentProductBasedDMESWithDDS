@@ -1,0 +1,6 @@
+struct recipeRes {
+    string GUID;
+    unsigned long orderNumber;
+    unsigned long orderPosition;
+    string note;
+};
