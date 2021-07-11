@@ -182,43 +182,45 @@ int main(int argc, char ** argv){
                 // 收到Work Order Management任務
                 if (*intelligentProduct.recipeInfoSubscriber.public_messageStack == true)
                 {
-                    onBusy = true;
-                    *intelligentProduct.recipeInfoSubscriber.public_messageStack = false;
-                    orderNumber = intelligentProduct.recipeInfoSubscriber.public_recipeInfo->orderNumber();
-                    orderPosition = intelligentProduct.recipeInfoSubscriber.public_recipeInfo->orderPosition();
-
-                    logger->debug("Receive an order whose order number and position is {} and {}", orderNumber, orderPosition);
-
-                    try 
-                    {
-                        // workInfo format: "WPNo;ResourceId_n:ONo_1:Par_1_1:...Par_1_n;...;ResurceId_n:ONo_n:Par_n_1:...Par_n_n"
-                        std::vector<std::string>workedPlan = split(intelligentProduct.recipeInfoSubscriber.public_recipeInfo->workPlan(), ";");
-                        for (int i = 0; i < workedPlan.size() - 1; i++)
-                        {
-                            workPlanNumbers.push_back(std::stoi(workedPlan[0]));
-                            stepNumbers.push_back((i + 1) * 10);
-                            std::vector<std::string> workedOperation = split(workedPlan[i + 1], ":");
-                            operationNumbers.push_back(std::stoi(workedOperation[1]));
-                            resourceIds.push_back(std::stoi(workedOperation[0]));
-                            for (int j = 0; j < workedOperation.size() - 2; j++)
-                            {
-                                detailOperationNumbers.push_back(std::stoi(workedOperation[1]));
-                                parameterNumbers.push_back(j + 1);
-                                parameterValues.push_back(std::stoi(workedOperation[j + 2]));
-                                detailResourceIds.push_back(std::stoi(workedOperation[0]));
-                            }
-                        }
-                        logger->debug("resource id: {} {} {} {}", resourceIds[0], resourceIds[1], resourceIds[2], resourceIds[3]);
-                        nextStepNumber = stepNumbers[0];
-                        logger->debug("Response to WOM with ack");
-                        intelligentProduct.responseRecipe(GUID, orderNumber, orderPosition, "Nope");
-                    }
-                    catch (const std::exception & exc)
+                    if (GUID == intelligentProduct.recipeInfoSubscriber.public_recipeInfo->GUID())
                     {
                         onBusy = true;
-                        logger->debug("Work Plan Format Is Incorrect");
+                        *intelligentProduct.recipeInfoSubscriber.public_messageStack = false;
+                        orderNumber = intelligentProduct.recipeInfoSubscriber.public_recipeInfo->orderNumber();
+                        orderPosition = intelligentProduct.recipeInfoSubscriber.public_recipeInfo->orderPosition();
+
+                        logger->debug("Receive an order whose order number and position is {} and {}", orderNumber, orderPosition);
+
+                        try 
+                        {
+                            // workInfo format: "WPNo;ResourceId_n:ONo_1:Par_1_1:...Par_1_n;...;ResurceId_n:ONo_n:Par_n_1:...Par_n_n"
+                            std::vector<std::string>workedPlan = split(intelligentProduct.recipeInfoSubscriber.public_recipeInfo->workPlan(), ";");
+                            for (int i = 0; i < workedPlan.size() - 1; i++)
+                            {
+                                workPlanNumbers.push_back(std::stoi(workedPlan[0]));
+                                stepNumbers.push_back((i + 1) * 10);
+                                std::vector<std::string> workedOperation = split(workedPlan[i + 1], ":");
+                                operationNumbers.push_back(std::stoi(workedOperation[1]));
+                                resourceIds.push_back(std::stoi(workedOperation[0]));
+                                for (int j = 0; j < workedOperation.size() - 2; j++)
+                                {
+                                    detailOperationNumbers.push_back(std::stoi(workedOperation[1]));
+                                    parameterNumbers.push_back(j + 1);
+                                    parameterValues.push_back(std::stoi(workedOperation[j + 2]));
+                                    detailResourceIds.push_back(std::stoi(workedOperation[0]));
+                                }
+                            }
+                            logger->debug("resource id: {} {} {} {}", resourceIds[0], resourceIds[1], resourceIds[2], resourceIds[3]);
+                            nextStepNumber = stepNumbers[0];
+                            logger->debug("Response to WOM with ack");
+                            intelligentProduct.responseRecipe(GUID, orderNumber, orderPosition, "Nope");
+                        }
+                        catch (const std::exception & exc)
+                        {
+                            onBusy = true;
+                            logger->debug("Work Plan Format Is Incorrect");
+                        }
                     }
-                    
                 }
             }
         }
@@ -313,6 +315,11 @@ void waitAssignedOpResAndUpdateNextStepNumber(unsigned int LresourceId,
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    logger->debug("No Responses");
+    if (LresourceId == 3 && nextStepNumber == 10)  // ASRS=3, binding carrier fails 
+    {
+        bindedCarrierId = 0;
     }
 }
 

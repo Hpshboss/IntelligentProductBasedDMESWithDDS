@@ -130,6 +130,7 @@ void AssignedOpResSubscriber::SubListener::onNewDataMessage(
         {
             m_messageStack = true;
 
+            /*
             unsigned int resourceId;
             resourceId = m_assignedOpRes.resourceId();
 
@@ -155,6 +156,7 @@ void AssignedOpResSubscriber::SubListener::onNewDataMessage(
                            "operationInfo: " + operationInfo + "; \t" +
                            "result: " + result + "; \t" +
                            "Note: " + m_assignedOpRes.note() + "; \t");
+            */
         }
     }
 }

@@ -38,9 +38,8 @@ std::vector<std::string> split(const std::string& str, const std::string& delim)
 std::shared_ptr<spdlog::logger> logger = spdlog::stderr_color_mt("client");
 Machine machine(logger);
 
-// Generate a random carrier id for Intelligent
-std::random_device rd;
-std::mt19937 generateRandom(rd());
+// Generate a order id carrier id for Intelligent
+int carrierIds[10] = {1,2,3,4,5,6,7,8,9,10};
 int randomCarrierId = 999;
 
 // resourceId is given by user in command's argument
@@ -50,31 +49,47 @@ int main(int argc, char ** argv){
     logger->set_level(spdlog::level::debug);
     try
     {
-        myResourceId = std::atoi(argv[0]);
+        myResourceId = std::atoi(argv[1]);
 
         bool portStop = false;
         bool portWaitAssignedOp = false;
         
         machine.monitorAssignedOperation();
 
+        int carrierIndex = 0;
         while(true)
         {
             // 機台偵測到小車，並停止輸送帶傳送
             if (portStop && !portWaitAssignedOp)    // to publish carrier number
             {
-                randomCarrierId = (int) (generateRandom() % 10 + 1);
+                randomCarrierId = carrierIds[carrierIndex++];
+                if (carrierIndex == 10) 
+                {
+                    carrierIndex = 0;
+                }
+
                 logger->debug("Stopper RFID value is {}", randomCarrierId);
-                machine.broadcastCarrierPosition(3, 1, randomCarrierId, "Nope");
+                machine.broadcastCarrierPosition(myResourceId, 1, randomCarrierId, "Nope");
 
                 portWaitAssignedOp = true;
+                waitAssigedOpAndExecute(&portStop, &portWaitAssignedOp);
+
+                /*
                 std::thread waitAssigedOpAndExecuteThread(&waitAssigedOpAndExecute,
                                                           &portStop, 
                                                           &portWaitAssignedOp);
                 waitAssigedOpAndExecuteThread.detach();
+                */
             }
             
-            logger->debug("Wait for next carrier");
-            std::this_thread::sleep_for(std::chrono::milliseconds(10000));  // trigger carrier arrival
+            // Simulate wait carrier arrival (every ten seconds)
+            logger->debug("M{} waits for next carrier", myResourceId);
+            for (int i = 0; i < 5; i++)
+            {
+                logger->debug("{} second left", 5-i);
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));  // trigger carrier arrival
+            }
+            portStop = true;
         }
     }
 
@@ -101,7 +116,6 @@ void waitAssigedOpAndExecute(bool* portStop,
         if (*machine.assignedOpSubscriber.public_messageStack)
         {
             *machine.assignedOpSubscriber.public_messageStack = false;
-            logger->debug("assignedOperation Recieved.");
 
             int resourceId = machine.assignedOpSubscriber.public_assignedOp->resourceId();
             int portId = machine.assignedOpSubscriber.public_assignedOp->portId();
@@ -109,6 +123,8 @@ void waitAssigedOpAndExecute(bool* portStop,
             int carrierId = machine.assignedOpSubscriber.public_assignedOp->carrierId(); 
             std::string operationInfo = machine.assignedOpSubscriber.public_assignedOp->operationInfo();
             std::string note = machine.assignedOpSubscriber.public_assignedOp->note();
+            
+            logger->debug("assignedOperation Recieved.");
 
             if (resourceId == myResourceId && portId == 1 && carrierId == randomCarrierId)
             {
@@ -117,10 +133,11 @@ void waitAssigedOpAndExecute(bool* portStop,
                     logger->debug("No Assignment");
                     *portStop = false;
                     machine.responseAssignedOperation(resourceId, portId, GUID, carrierId, operationInfo, "NONE", "Nope");
+                    *waitAssignedOp = false;
                     return; 
                 }
 
-                logger->debug("Ready to execute");
+                logger->debug("Ready to execute operation, which is {}", operationInfo);
                 machine.responseAssignedOperation(resourceId, portId, GUID, carrierId, operationInfo, "READY", "Nope");
 
                 *portStop = false;
@@ -128,7 +145,9 @@ void waitAssigedOpAndExecute(bool* portStop,
                 *waitAssignedOp = false;
 
                 // 模擬等待機台加工完成: 3 seconds
+                logger->debug("Machine {} is on busy for three seconds", myResourceId);
                 std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+                logger->debug("Operation Complete");
 
                 machine.responseAssignedOperation(resourceId, portId, GUID, carrierId, operationInfo, "DONE", "NOPE");
 

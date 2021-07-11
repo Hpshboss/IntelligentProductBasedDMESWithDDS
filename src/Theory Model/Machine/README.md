@@ -10,8 +10,19 @@ make
 ```
 
 **執行Binary File**
-```./Machine [resourceId]```
+```
+./Machine [resourceId]
+```
 
 **Fixed Record**
+
 - **20210709**
 >- 編譯完成但尚未測試
+
+- **20210710**
+>- 測試完成
+>- 新增Delay(觸發頻率15s)
+>- carrier id取消亂數生成，改成順序遞增循環
+
+- **20210711**
+>- 因只有一個判斷式，目前註解掉多線程設計

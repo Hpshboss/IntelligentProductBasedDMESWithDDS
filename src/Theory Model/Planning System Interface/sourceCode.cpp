@@ -39,7 +39,7 @@ int main(int argc, char ** argv){
         logger->debug("Wait 5 seconds...");
         std::this_thread::sleep_for(std::chrono::milliseconds(5000));
         logger->debug("Place an order to Work Order Management...");
-        planningSystemInterface.placeAnOrder(3001, 6666, 1, "Nope");
+        planningSystemInterface.placeAnOrder(3001, 6666, 3, "Nope");
 
         while(true)
         {

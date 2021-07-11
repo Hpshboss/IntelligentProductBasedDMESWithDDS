@@ -129,6 +129,8 @@ void ProductRepSubscriber::SubListener::onNewDataMessage(
         if (m_info.sampleKind == ALIVE)
         {
             m_messageStack = true;
+
+            /*
             std::string GUID;
             GUID = m_productRep.GUID();
 
@@ -146,6 +148,7 @@ void ProductRepSubscriber::SubListener::onNewDataMessage(
                             "Order Position: " + std::to_string(orderPosition) + "; \t" +
                             "Result: " + result + "; \t" +
                             "Note: " + m_productRep.note() + "; \t");
+            */
         }
     }
 }

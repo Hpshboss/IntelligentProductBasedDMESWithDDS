@@ -9,7 +9,16 @@ cmake .
 make
 ```
 
+**執行指令**
+```
+./IntelligentModule [five number value(ex: 23145)]
+```
+
 **Fix Record**
 
 - **20210709**
 >- 編譯完成但尚未測試
+
+- **20210711**
+>- 測試完成
+>- 新增偽GUID函式

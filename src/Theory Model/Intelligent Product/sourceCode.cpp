@@ -34,7 +34,7 @@ using namespace rtps;
 bool onBusy = false;
 
 // Basic Info
-std::string GUID = "21EC2020-3AEA-1069-A2DD-08002B303099";
+std::string GUID = "21EC2020-3AEA-1069-A2DD-08002B303099";  // default
 unsigned int orderNumber = 0;
 unsigned int orderPosition = 0;
 int nextStepNumber = 0;  // 0: intial; -1: Done
@@ -56,6 +56,7 @@ void broadcastIntelliegntProductState();
 void waitAssignedOpResAndUpdateNextStepNumber(unsigned int LresourceId, unsigned int LportId, std::string LGUID, unsigned int LcarrierId, std::string LoperationInfo);
 std::vector<std::string> split(const std::string& str, const std::string& delim);
 int getVectorIndex(std::vector<int> vectorInstance, int elementValue);
+void getFakeGUID(std::string seedNum);
 
 std::shared_ptr<spdlog::logger> logger = spdlog::stderr_color_mt("client");
 IntelligentProduct intelligentProduct(logger);
@@ -64,7 +65,7 @@ int main(int argc, char ** argv){
     logger->set_level(spdlog::level::debug); 
     try
     {
-        logger->debug("main");
+        getFakeGUID(argv[1]);
 
         intelligentProduct.monitorCarrierPos();
         intelligentProduct.monitorRecipeInfo();
@@ -87,6 +88,7 @@ int main(int argc, char ** argv){
                     intelligentProduct.reportProductResult(GUID, orderNumber, orderPosition, "DONE", "Nope");
                     onBusy = false;
                     *intelligentProduct.recipeInfoSubscriber.public_messageStack = false;
+                    break;
                 }
 
                 // 各機台回報停靠小車
@@ -104,14 +106,19 @@ int main(int argc, char ** argv){
                         continue;
                     }
 
-                    logger->debug("Carrier {} Stops at {}th resource", std::to_string(carrierId), std::to_string(resourceId));
-
-                    logger->debug("resources id is {}", std::to_string(resourceIds[getVectorIndex(stepNumbers, nextStepNumber)]));
+                    if (carrierId == bindedCarrierId && resourceId == resourceIds[getVectorIndex(stepNumbers, nextStepNumber)])
+                    {
+                        logger->debug("Carrier(C) {} stops at resource(R) {} and ID of needed C and R are {} and {}", 
+                                      std::to_string(carrierId), 
+                                      std::to_string(resourceId), 
+                                      std::to_string(bindedCarrierId),  // zero when not binded yet
+                                      std::to_string(resourceIds[getVectorIndex(stepNumbers, nextStepNumber)]));
+                    }
 
                     // First operation of a machine (ex: ASRS restores) and intelligent product binds a carrier
                     if (resourceIds[getVectorIndex(stepNumbers, nextStepNumber)] == resourceId && bindedCarrierId == 0) 
                     {
-                        logger->debug("ASRS will restore...");
+                        logger->debug("Ask ASRS to restore...");
                         bindedCarrierId = carrierId;
 
                         // Operation format: "OPNo:Par_1:Par_2:...:Par_n"
@@ -184,45 +191,52 @@ int main(int argc, char ** argv){
                 // 收到Work Order Management任務
                 if (*intelligentProduct.recipeInfoSubscriber.public_messageStack == true)
                 {
-                    onBusy = true;
-                    *intelligentProduct.recipeInfoSubscriber.public_messageStack = false;
-                    orderNumber = intelligentProduct.recipeInfoSubscriber.public_recipeInfo->orderNumber();
-                    orderPosition = intelligentProduct.recipeInfoSubscriber.public_recipeInfo->orderPosition();
-
-                    logger->debug("Receive an order whose order number and position is {} and {}", orderNumber, orderPosition);
-
-                    try 
-                    {
-                        // workInfo format: "WPNo;ResourceId_n:ONo_1:Par_1_1:...Par_1_n;...;ResurceId_n:ONo_n:Par_n_1:...Par_n_n"
-                        std::vector<std::string>workedPlan = split(intelligentProduct.recipeInfoSubscriber.public_recipeInfo->workPlan(), ";");
-                        for (int i = 0; i < workedPlan.size() - 1; i++)
-                        {
-                            workPlanNumbers.push_back(std::stoi(workedPlan[0]));
-                            stepNumbers.push_back((i + 1) * 10);
-                            std::vector<std::string> workedOperation = split(workedPlan[i + 1], ":");
-                            operationNumbers.push_back(std::stoi(workedOperation[1]));
-                            resourceIds.push_back(std::stoi(workedOperation[0]));
-                            for (int j = 0; j < workedOperation.size() - 2; j++)
-                            {
-                                detailOperationNumbers.push_back(std::stoi(workedOperation[1]));
-                                parameterNumbers.push_back(j + 1);
-                                parameterValues.push_back(std::stoi(workedOperation[j + 2]));
-                                detailResourceIds.push_back(std::stoi(workedOperation[0]));
-                            }
-                        }
-                        logger->debug("resource id: {} {} {} {}", resourceIds[0], resourceIds[1], resourceIds[2], resourceIds[3]);
-                        nextStepNumber = stepNumbers[0];
-                        logger->debug("Response to WOM with ack");
-                        intelligentProduct.responseRecipe(GUID, orderNumber, orderPosition, "Nope");
-                    }
-                    catch (const std::exception & exc)
+                    if (GUID == intelligentProduct.recipeInfoSubscriber.public_recipeInfo->GUID())
                     {
                         onBusy = true;
-                        logger->debug("Work Plan Format Is Incorrect");
+                        *intelligentProduct.recipeInfoSubscriber.public_messageStack = false;
+                        orderNumber = intelligentProduct.recipeInfoSubscriber.public_recipeInfo->orderNumber();
+                        orderPosition = intelligentProduct.recipeInfoSubscriber.public_recipeInfo->orderPosition();
+
+                        logger->debug("Receive an order whose order number and position is {} and {}", orderNumber, orderPosition);
+
+                        try 
+                        {
+                            // workInfo format: "WPNo;ResourceId_n:ONo_1:Par_1_1:...Par_1_n;...;ResurceId_n:ONo_n:Par_n_1:...Par_n_n"
+                            std::vector<std::string>workedPlan = split(intelligentProduct.recipeInfoSubscriber.public_recipeInfo->workPlan(), ";");
+                            for (int i = 0; i < workedPlan.size() - 1; i++)
+                            {
+                                workPlanNumbers.push_back(std::stoi(workedPlan[0]));
+                                stepNumbers.push_back((i + 1) * 10);
+                                std::vector<std::string> workedOperation = split(workedPlan[i + 1], ":");
+                                operationNumbers.push_back(std::stoi(workedOperation[1]));
+                                resourceIds.push_back(std::stoi(workedOperation[0]));
+                                for (int j = 0; j < workedOperation.size() - 2; j++)
+                                {
+                                    detailOperationNumbers.push_back(std::stoi(workedOperation[1]));
+                                    parameterNumbers.push_back(j + 1);
+                                    parameterValues.push_back(std::stoi(workedOperation[j + 2]));
+                                    detailResourceIds.push_back(std::stoi(workedOperation[0]));
+                                }
+                            }
+                            logger->debug("resource id: {} {} {} {}", resourceIds[0], resourceIds[1], resourceIds[2], resourceIds[3]);
+                            nextStepNumber = stepNumbers[0];
+                            logger->debug("Response to WOM with ack");
+                            intelligentProduct.responseRecipe(GUID, orderNumber, orderPosition, "Nope");
+                        }
+                        catch (const std::exception & exc)
+                        {
+                            onBusy = true;
+                            logger->debug("Work Plan Format Is Incorrect");
+                        }
                     }
-                    
                 }
             }
+        }
+        while (true)
+        {
+            logger->debug("Just not terminated");
+            std::this_thread::sleep_for(std::chrono::milliseconds(5000));
         }
     }
 
@@ -245,6 +259,10 @@ void broadcastIntelliegntProductState()
     {
         if (onBusy == false)
         {
+            if (nextStepNumber == -1)
+            { 
+                break;
+            }
             intelligentProduct.responseRecipe(GUID, 0, 0, "Nope");
             std::this_thread::sleep_for(std::chrono::milliseconds(2500));
         }
@@ -291,7 +309,7 @@ void waitAssignedOpResAndUpdateNextStepNumber(unsigned int LresourceId,
                             LoperationInfo == intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->operationInfo() &&
                             intelligentProduct.assignedOpResSubscriber.public_assignedOpRes->result() == "DONE")
                         {
-                            logger->debug("{}th resource's operation completed");
+                            logger->debug("{}th resource's operation completed", LresourceId);
                             int index = getVectorIndex(stepNumbers, nextStepNumber);
                             if (index == stepNumbers.size() - 1) 
                             {
@@ -319,6 +337,11 @@ void waitAssignedOpResAndUpdateNextStepNumber(unsigned int LresourceId,
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    logger->debug("No Responses");
+    if (LresourceId == 3 && nextStepNumber == 10)  // ASRS=3, binding carrier fails.
+    {
+        bindedCarrierId = 0;
     }
 }
 
@@ -362,5 +385,34 @@ int getVectorIndex(std::vector<int> vectorInstance, int elementValue)
         // If the element is not
         // present in the vector
         return -1;
+    }
+}
+
+void getFakeGUID(std::string seedNum)
+{
+    GUID = "";
+    for (int i = 0; i < 8; i++)
+    {
+        GUID += seedNum[0];
+    }
+    GUID += "-";
+    for (int i = 0; i < 4; i++)
+    {
+        GUID += seedNum[1];
+    }
+    GUID += "-";
+    for (int i = 0; i < 4; i++)
+    {
+        GUID += seedNum[2];
+    }
+    GUID += "-";
+    for (int i = 0; i < 4; i++)
+    {
+        GUID += seedNum[3];
+    }
+    GUID += "-";
+    for (int i = 0; i < 12; i++)
+    {
+        GUID += seedNum[4];
     }
 }

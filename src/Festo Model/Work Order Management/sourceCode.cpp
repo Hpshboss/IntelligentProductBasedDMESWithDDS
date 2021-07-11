@@ -98,7 +98,7 @@ int main(int argc, char ** argv){
                 {
                     detailOrderNumbers.push_back(orderNumber);
                     detailPartNumbers.push_back(partNumber);
-                    orderPositions.push_back(quantity);
+                    orderPositions.push_back(i + 1);
                     GUIDs.push_back("");
                     positionStates.push_back("WAIT");
                 }
@@ -134,9 +134,9 @@ int main(int argc, char ** argv){
             {
                 *workOrderManagement.recipeResSubscriber.public_messageStack = false;
 
-                std::string GUID = workOrderManagement.productRepSubscriber.public_productRep->GUID();
-                unsigned int orderNumber = workOrderManagement.productRepSubscriber.public_productRep->orderNumber();
-                unsigned int orderPosition = workOrderManagement.productRepSubscriber.public_productRep->orderPosition();
+                std::string GUID = workOrderManagement.recipeResSubscriber.public_recipeRes->GUID();
+                unsigned int orderNumber = workOrderManagement.recipeResSubscriber.public_recipeRes->orderNumber();
+                unsigned int orderPosition = workOrderManagement.recipeResSubscriber.public_recipeRes->orderPosition();
 
                 // 當Intelligent Product為廣播狀態，且為沒任務狀態
                 if (orderNumber == 0 && orderPosition == 0)
@@ -150,7 +150,7 @@ int main(int argc, char ** argv){
                         workPlanNumber = 1215;
                         // 委派任務
                         workOrderManagement.assignRecipeInfo(GUID, 
-                                                             orderNumbers[index], 
+                                                             detailOrderNumbers[index], 
                                                              orderPositions[index], 
                                                              getWorkPlanPackage(workPlanNumber), 
                                                              "Nope");
@@ -158,9 +158,9 @@ int main(int argc, char ** argv){
                 }
                 
                 // 收到Intelligent Product接收訂單成功
-                for (int i = 0; i < orderNumbers.size(); i++)
+                for (int i = 0; i < detailOrderNumbers.size(); i++)
                 {
-                    if (orderNumbers[i] == orderNumber &&
+                    if (detailOrderNumbers[i] == orderNumber &&
                         orderPositions[i] == orderPosition)
                     {
                         // 更新資料庫

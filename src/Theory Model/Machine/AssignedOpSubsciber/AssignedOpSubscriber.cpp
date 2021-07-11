@@ -130,6 +130,7 @@ void AssignedOpSubscriber::SubListener::onNewDataMessage(
         {
             m_messageStack = true;
 
+            /*
             unsigned int resourceId;
             resourceId = m_assignedOp.resourceId();
 
@@ -145,12 +146,14 @@ void AssignedOpSubscriber::SubListener::onNewDataMessage(
             std::string operationInfo;
             operationInfo = m_assignedOp.operationInfo();
 
+            
             LLogger->debug("resourceId: " + std::to_string(resourceId) + "; \t" + 
                            "portId: " + std::to_string(portId) + "; \t" +
                            "GUID: " + GUID + "; \t" +
                            "Carrier ID: " + std::to_string(carrierId) + "; \t" +
                            "operationInfo: " + operationInfo + "; \t" +
                            "Note: " + m_assignedOp.note() + "; \t");
+            */
         }
     }
 }

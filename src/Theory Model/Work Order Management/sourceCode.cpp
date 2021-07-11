@@ -100,7 +100,7 @@ int main(int argc, char ** argv){
                 {
                     detailOrderNumbers.push_back(orderNumber);
                     detailPartNumbers.push_back(partNumber);
-                    orderPositions.push_back(quantity);
+                    orderPositions.push_back(i + 1);
                     GUIDs.push_back("");
                     positionStates.push_back("WAIT");
                 }
@@ -125,6 +125,7 @@ int main(int argc, char ** argv){
                     {
                         if (result == "DONE")
                         {
+                            logger->debug("GUID, {}, has done for ONo, {}, and OPos, {}.", GUID, orderNumber, orderPosition);
                             positionStates[index] = "DONE";
                         }
                     }
@@ -136,9 +137,9 @@ int main(int argc, char ** argv){
             {
                 *workOrderManagement.recipeResSubscriber.public_messageStack = false;
 
-                std::string GUID = workOrderManagement.productRepSubscriber.public_productRep->GUID();
-                unsigned int orderNumber = workOrderManagement.productRepSubscriber.public_productRep->orderNumber();
-                unsigned int orderPosition = workOrderManagement.productRepSubscriber.public_productRep->orderPosition();
+                std::string GUID = workOrderManagement.recipeResSubscriber.public_recipeRes->GUID();
+                unsigned int orderNumber = workOrderManagement.recipeResSubscriber.public_recipeRes->orderNumber();
+                unsigned int orderPosition = workOrderManagement.recipeResSubscriber.public_recipeRes->orderPosition();
 
                 // 當Intelligent Product為廣播狀態，且為沒任務狀態
                 if (orderNumber == 0 && orderPosition == 0)
@@ -146,6 +147,8 @@ int main(int argc, char ** argv){
                     int index = getVectorIndex(positionStates, "WAIT");
                     
                     int workPlanNumber = 0;
+
+                    // Festo實際產品編號
                     if (index > -1 && detailPartNumbers[index] == 1215)
                     {
                         logger->debug("Delegate No Drilling and No Heating Product");
@@ -158,13 +161,14 @@ int main(int argc, char ** argv){
                                                              "Nope");
                     }
 
+                    // 因模組化需求設計的虛擬產品編號
                     if (index > -1 && detailPartNumbers[index] == 6666)
                     {
                         logger->debug("Delegate Virtual Product Simulated in Festo");
                         workPlanNumber = 6666;
                         // 委派任務
                         workOrderManagement.assignRecipeInfo(GUID, 
-                                                             orderNumbers[index], 
+                                                             detailOrderNumbers[index], 
                                                              orderPositions[index], 
                                                              getWorkPlanPackage(workPlanNumber), 
                                                              "Nope");
@@ -172,13 +176,14 @@ int main(int argc, char ** argv){
                 }
                 
                 // 收到Intelligent Product接收訂單成功
-                for (int i = 0; i < orderNumbers.size(); i++)
+                for (int i = 0; i < detailOrderNumbers.size(); i++)
                 {
-                    if (orderNumbers[i] == orderNumber &&
+                    if (detailOrderNumbers[i] == orderNumber &&
                         orderPositions[i] == orderPosition)
                     {
                         // 更新資料庫
                         GUIDs[i] = GUID;
+                        positionStates[i] = "ONLINE";
                     }
                 }
                 
@@ -235,7 +240,7 @@ void initializeDatabase()
         3, 1, 2, 3,     // 1: MagBack; 2: MPress; 3: ASRS
 
         // work plan 6666
-        3, 4, 5, 6, 3   // 4, 5, 6 are resource ids of virtual resources
+        3, 4, 5, 6, 3   // 4, 5, 6 are resource id(s) of virtual resources
     }; 
 
     //**************************Operations*************************//
@@ -246,6 +251,7 @@ void initializeDatabase()
         // work plan 6666
         212, 212, 210, 210
     };
+
     parameterNumbers = {
         // work plan 1215
         1, 2, 1, 2, 1, 2,
@@ -253,6 +259,7 @@ void initializeDatabase()
         // work plan 6666
         1, 2, 1, 2
     };
+
     parameterValues = {
         // work plan 1215
         12, 210,  // 12: restore on stopper 1; 210: certain part number

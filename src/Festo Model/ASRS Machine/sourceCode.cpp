@@ -112,6 +112,7 @@ void waitAssigedOpAndExecute(bool* portStop,
                     *portStop = false;
                     asrsMachine.responseAssignedOperation(resourceId, portId, GUID, carrierId, operationInfo, "NONE", "Nope");
                     asrs32OpcuaAgent.monitorCarrierArrivalThenStopStopper1(portStop);
+                    *waitAssignedOp = false;
                     return; 
                 }
 

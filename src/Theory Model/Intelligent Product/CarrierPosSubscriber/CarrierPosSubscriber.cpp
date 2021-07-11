@@ -139,10 +139,12 @@ void CarrierPosSubscriber::SubListener::onNewDataMessage(
             unsigned int carrierId;
             carrierId = m_carrierPos.carrierId();
 
+            /*
             LLogger->debug("resourceId: " + std::to_string(resourceId) + "; \t" +
                            "portId: " + std::to_string(portId) + "; \t" + 
                            "carrierId: " + std::to_string(carrierId) + "; \t" +
                            "Note: " + m_carrierPos.note() + "; \t");
+            */
         }
     }
 }
