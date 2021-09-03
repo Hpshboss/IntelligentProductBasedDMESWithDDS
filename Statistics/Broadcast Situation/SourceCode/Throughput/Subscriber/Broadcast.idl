@@ -1,0 +1,5 @@
+struct Broadcast
+{
+	unsigned long index;
+	sequence<unsigned long, ((1<<21)-1)> buffer;
+};
